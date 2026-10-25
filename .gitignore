@@ -2,3 +2,17 @@
 !.claude/skills/
 
 .scratch/
+.codex/*
+!.codex/agents/
+!.codex/agents/**
+!.codex/skills/
+!.codex/skills/**
+.codex/skills/.system/**
+!.codex/prompts/
+!.codex/prompts/**
+
+compilers/inductor_deep_dive/code/.cache/
+torch_compile_debug/
+
+__pycache__/
+*.py[cod]

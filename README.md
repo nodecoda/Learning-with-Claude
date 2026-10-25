@@ -38,10 +38,24 @@
   - flex + bison 寫 MiniC frontend
 - [compiler_backend](./compilers/compiler_backend/README.md)
   - LLVM RISC-V backend：SelectionDAG / TableGen / Scheduler / MC
+- [globalisel_instruction_select](./compilers/globalisel_instruction_select/README.md)
+  - LLVM 23.1.4 GlobalISel InstructionSelect：gMIR/Legalizer/RegBankSelect → TableGen matcher table → AArch64 pattern/ComplexPattern/C++ selector → MIR/lit 與 custom pseudo final，24 章 + 4 練習 + 1 final
+- [globalisel_regbankselect](./compilers/globalisel_regbankselect/README.md)
+  - LLVM 23.1.4 GlobalISel RegBankSelect：bank/LLT/regclass → RegisterBankInfo mapping → Fast/Greedy/cost/repair → AArch64 源碼與 custom opcode final，24 章 + 4 練習 + 1 final
 - [elf_linking](./compilers/elf_linking/README.md)
   - relocation / linker script / RISC-V relaxation
 - [ssa_optimizations](./compilers/ssa_optimizations/README.md)
   - SSA 理論到 LLVM Pass 實作：Dominator Tree / SCCP / GVN / SCEV / 過程間分析，32 章 + 3 練習 + mini optimizer + CSmith 驗證 final
+- [mlir_core](./compilers/mlir_core/README.md)
+  - MLIR 全貌：32 章 + 4 練習 + mini frontend final
+- [ai_compiler](./compilers/ai_compiler/README.md)
+  - AI 编译器全貌：31 章 + 4 練習 + mini C-codegen compiler final
+- [mini_ai_compiler](./compilers/mini_ai_compiler/README.md)
+  - 自己造 mini AI 编译器：25 章 + 4 練習 + C/LLVM 雙後端 final，含可運行實作與測試
+- [inductor_deep_dive](./compilers/inductor_deep_dive/README.md)
+  - TorchInductor 单栈深入：24 章 + 4 练习 + final；读 compile_fx/scheduler/codegen 源码，写自定义 pass 与 lowering
+- [riscv_backend](./compilers/riscv_backend/README.md)
+  - LLVM 23.1.4 RISC-V 完整後端：TableGen/編碼 → MC/組譯/反組譯 → 暫存器/ABI/堆疊框 → Legalizer/SelectionDAG/GlobalISel → 偽指令/排程/AsmPrinter → 重定位/RVV/自訂指令，24 章 + 4 練習 + final
 
 ### dev_tools/
 
