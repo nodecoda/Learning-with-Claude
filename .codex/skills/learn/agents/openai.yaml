@@ -1,0 +1,4 @@
+interface:
+  display_name: "Learn"
+  short_description: "Author deep multi-chapter tutorial courses in this repo"
+  default_prompt: "Use $learn to plan and write a new course for topic: "

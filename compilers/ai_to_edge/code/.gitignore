@@ -1,0 +1,26 @@
+# 构建产物：全部可由各目录的 build.sh / run_all.sh 重新生成
+*.o
+*.so
+*.a
+*.elf
+*.bin
+*.out
+
+# 编译器与 MLIR 的中间输出
+*.ll
+*.s
+*.llvm.mlir
+
+# 直接编译出的可执行文件（无扩展名）
+01_hello_llvm/add_a64
+02_mlir_lowering/matmul_a64
+04_aarch64/add_a64
+06_riscv/add_rv
+08_quant/acc_width
+08_quant/int8_kernel
+11_trace/trace_bin
+13_arena/arena_bench
+
+# PyTorch Inductor 编译缓存
+03_inductor/cache/
+__pycache__/

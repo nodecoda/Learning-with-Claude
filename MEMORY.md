@@ -7,3 +7,4 @@
 - [Project: mini_ai_compiler course scope](user_mini_ai_compiler_learning.md) — 动手造 mini AI 编译器：25 章 + 4 练习 + C/LLVM 双后端 final；已完成 (2026-10-25)
 - [Project: inductor_deep_dive course scope](user_inductor_deep_dive_learning.md) — TorchInductor 单栈深入：24 章 + 4 练习 + final；源码阅读 + 自定义 pass/lowering；已完成 (2026-10-25)
 - [Project: riscv_backend course scope](user_riscv_backend_learning.md) — LLVM 23.1.4 RISC-V 完整後端：24 章 + 4 練習 + Final；TableGen/編碼/MC/ABI/ISel/重定位/RVV；已完成 (2026-10-25)
+- [Project: ai_to_edge course scope](user_ai_to_edge_learning.md) — 大模型到边缘设备全链路：AI 编译器 → MLIR → LLVM → AArch64/Cortex-M/RISC-V，30 章 + 4 练习 + 端到端 final；已完成 (2026-10-28)，36 篇 14,666 行
