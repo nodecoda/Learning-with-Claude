@@ -58,6 +58,8 @@
   - LLVM 23.1.4 RISC-V 完整後端：TableGen/編碼 → MC/組譯/反組譯 → 暫存器/ABI/堆疊框 → Legalizer/SelectionDAG/GlobalISel → 偽指令/排程/AsmPrinter → 重定位/RVV/自訂指令，24 章 + 4 練習 + final
 - [ai_to_edge](./compilers/ai_to_edge/README.md)
   - 从大模型到边缘设备全链路：PyTorch 图捕获 → 融合/调度/量化 → MLIR → LLVM IR → AArch64 / Cortex-M3 / RISC-V 三后端 → 链接与最小运行时，30 章 + 4 练习 + 端到端 final，全程在本机真跑（qemu 验证输出），简体中文
+- [tablegen_internals](./compilers/tablegen_internals/README.md)
+  - LLVM 24 TableGen 源码深潜：lexer/parser → Record/Init → folding/multiclass → backend 注册与生成 → 改语言特性/改记录语义 → 测试/性能/上游流程，23 章 + 4 练习 + 可提交 backend final，所有 `-gen-*` 与源码实验真实跑过，简体中文
 
 ### dev_tools/
 
