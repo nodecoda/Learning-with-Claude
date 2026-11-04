@@ -9,3 +9,4 @@
 - [Project: riscv_backend course scope](user_riscv_backend_learning.md) — LLVM 23.1.4 RISC-V 完整後端：24 章 + 4 練習 + Final；TableGen/編碼/MC/ABI/ISel/重定位/RVV；已完成 (2026-10-25)
 - [Project: ai_to_edge course scope](user_ai_to_edge_learning.md) — 大模型到边缘设备全链路：AI 编译器 → MLIR → LLVM → AArch64/Cortex-M/RISC-V，30 章 + 4 练习 + 端到端 final；已完成 (2026-10-28)，36 篇 14,666 行
 - [Project: tablegen_internals course scope](user_tablegen_internals_learning.md) — LLVM 24 TableGen 源码深潜：23 章 + 4 練習 + 可合併 backend final；拆 lib/TableGen 实现，目標能改源碼並參與上游；已完成 (2026-10-29)，29 篇 13,590 行
+- [Project: triton_source_deep_dive course scope](user_triton_source_deep_dive_learning.md) — Triton 3.9.0 源码深潜：34 章 + 5 练习 + 全栈 final；Python AST → TTIR/TTGIR → LLVM/PTX/SASS；目标能改并维护 Triton；已完成 (2026-11-04)，41 篇 19,453 行

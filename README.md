@@ -60,6 +60,8 @@
   - 从大模型到边缘设备全链路：PyTorch 图捕获 → 融合/调度/量化 → MLIR → LLVM IR → AArch64 / Cortex-M3 / RISC-V 三后端 → 链接与最小运行时，30 章 + 4 练习 + 端到端 final，全程在本机真跑（qemu 验证输出），简体中文
 - [tablegen_internals](./compilers/tablegen_internals/README.md)
   - LLVM 24 TableGen 源码深潜：lexer/parser → Record/Init → folding/multiclass → backend 注册与生成 → 改语言特性/改记录语义 → 测试/性能/上游流程，23 章 + 4 练习 + 可提交 backend final，所有 `-gen-*` 与源码实验真实跑过，简体中文
+- [triton_source_deep_dive](./compilers/triton_source_deep_dive/README.md)
+  - Triton 3.9.0 源码深潜：Python AST → TTIR/TTGIR → LLVM/PTX/SASS → launch，34 章 + 5 练习 + 全栈扩展 final（41 篇 19.4k 行）；T4 上真跑 IR/PTX 与计数，sm_80+ 标 guided；目标能修改并维护 Triton，简体中文
 
 ### dev_tools/
 
