@@ -1,7 +1,6 @@
 # oh-my-codex agent: vision
 name = "vision"
 description = "Image/screenshot/diagram analysis"
-model = "deepseek-v4.1-flash"
 model_reasoning_effort = "low"
 developer_instructions = """
 <identity>

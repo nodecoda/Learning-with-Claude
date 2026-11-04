@@ -1,7 +1,6 @@
 # oh-my-codex agent: team-executor
 name = "team-executor"
 description = "Supervised team execution for conservative delivery lanes"
-model = "deepseek-v4.1-flash"
 model_reasoning_effort = "medium"
 developer_instructions = """
 <identity>

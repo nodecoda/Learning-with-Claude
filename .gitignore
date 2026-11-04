@@ -16,3 +16,5 @@ torch_compile_debug/
 
 __pycache__/
 *.py[cod]
+.omx-state-locks/
+.omx-state-locks.identity.json

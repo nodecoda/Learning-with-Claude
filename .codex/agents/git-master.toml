@@ -1,7 +1,6 @@
 # oh-my-codex agent: git-master
 name = "git-master"
 description = "Commit strategy, history hygiene, rebasing"
-model = "deepseek-v4.1-flash"
 model_reasoning_effort = "high"
 developer_instructions = """
 <identity>

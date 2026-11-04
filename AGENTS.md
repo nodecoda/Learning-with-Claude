@@ -55,21 +55,21 @@ Keep runtime marker contracts stable and non-destructive when overlays are appli
 
 
 <delegation_rules>
-Default posture: work directly.
-
 Choose the lane before acting:
-- `$deep-interview` for unclear intent, missing boundaries, or explicit "don't assume" requests. It clarifies and hands off; it does not implement.
-- `$ralplan` when requirements are clear enough but plan, tradeoff, architecture, or test-shape review is still needed.
-- `$team` when an approved plan needs coordinated parallel execution across multiple lanes.
-- `$ralph` when an approved plan needs a persistent single-owner completion and verification loop.
-- Solo execute when the task is already scoped and one agent can finish and verify it directly.
+- Solo execute by default when scope is clear: work directly. The ordinary workflow is `understand -> execute -> verify -> report`.
+- Use `$autopilot` for explicit hands-off orchestration. Its defining default chain is `$deep-interview -> $ralplan -> $ultragoal`; these supervised stages must not be hollowed into optional hints.
+- Use `$deep-interview` when requirements, intent, non-goals, or decision boundaries are materially ambiguous; it is the independent Ouroboros-style Socratic deep interview stage before planning.
+- Use `$plan` for lightweight planning when a deep interview is unnecessary.
+- Use `$team` when an approved plan needs coordinated parallel execution across multiple lanes.
+- Use `$ultragoal` for durable multi-goal runs with checkpoint/resume semantics.
 - Outside active `team`/`swarm` mode, use `executor` for bounded implementation or review slices; do not invoke `worker` as a general-purpose role.
 - Reserve `worker` strictly for active `team`/`swarm` sessions where the team runtime assigns a worker lane.
 - `worker` is a team-runtime surface, not a general-purpose child role.
+- Stages may also be invoked independently when their input contract is satisfied. `$deep-interview` is not `$plan --interview`.
 
 
 Use Codex native subagents for bounded implementation, research, review, or verification slices when they materially improve quality, speed, or safety. Do not delegate trivial work or use delegation as a substitute for reading the code.
-- While a Conductor workflow is active, native children are verification/advice-only: they may perform positively classified reads, but child-to-leader reporting also requires separate host-authenticated caller, parent, and target proof. Codex 0.145.0 does not expose that proof, so collaboration reporting and source/product mutations remain denied. Route implementation through Team only after Team's separate host-authority checks pass; when Team is unavailable or denied, return a bounded read-only result or blocker instead of treating local state, task text, session fields, trackers, or child provenance as authority.
+- Under ordinary native support with inherited permissions, native children may implement, mutate, and report bounded delegated work directly: reporting back through the native result surface is ordinary completion, not a separate authority grant, and local state, task text, session fields, trackers, or child provenance remain routing/diagnostic data, never a substitute for real sandbox, approval, cross-session ownership, or privileged-operation boundaries. Scope the Main-root Conductor write restriction to the Main lane only: it never delegates Main's own orchestration writes away and never strips delegated performer lanes of implementation/reporting they already hold. Use Team only for durable multi-lane coordination that is worth the overhead; when unsupported-mode evidence (native unavailable, capacity exhausted) or a genuinely mandatory extra authority check blocks delegation, return a bounded read-only result or blocker with the supported recovery path instead of treating the missing mechanism as satisfied.
 </delegation_rules>
 
 <child_agent_protocol>
@@ -111,10 +111,12 @@ Keyword routing is implemented primarily by native `UserPromptSubmit` hooks and 
 
 Fallback behavior when hook context is unavailable:
 - Explicit `$name` invocations run left-to-right and override implicit keywords.
-- Bare skill names do not activate skills by themselves; skill-name activation requires explicit `$skill` invocation. Natural-language routing phrases may still map to a workflow. Examples: `analyze` / `investigate` → `$analyze` for read-only deep analysis with ranked synthesis, explicit confidence, and concrete file references; `deep interview`, `interview`, `don't assume`, or `ouroboros` → `$deep-interview` for Socratic deep interview requirements clarification.
+- Bare skill names do not activate skills by themselves; skill-name activation requires explicit `$skill` invocation. Natural-language routing phrases may still map to a workflow. Examples: `analyze` / `investigate` → `$analyze` for read-only deep analysis with ranked synthesis, explicit confidence, and concrete file references.
 - Keep the detailed keyword list in `src/hooks/keyword-registry.ts`; do not duplicate it here.
 
-Runtime workflows such as `autopilot`, `ralph`, `ultrawork`, `ultraqa`, `team`/`swarm`, and `ecomode` require OMX CLI runtime support. In Codex App, outside-tmux, or plain Codex sessions without OMX tmux runtime, explain that those workflows are not directly available there and continue with the nearest App-safe surface unless the user explicitly wants to launch OMX CLI from shell first.
+Runtime workflows such as `autopilot`, `ultraqa`, `team`, and `ultragoal` require OMX CLI runtime support. In Codex App, outside-tmux, or plain Codex sessions without OMX tmux runtime, explain that those workflows are not directly available there and continue with the nearest App-safe surface unless the user explicitly wants to launch OMX CLI from shell first.
+- Route explicit `$autopilot` to its supervised `$deep-interview -> $ralplan -> $ultragoal` chain.
+- `$ralph`, `$ultrawork`, `$pipeline`, `ecomode`, and `swarm` remain removed or deprecated sunset stubs; do not route users there.
 - When deep-interview is active in attached-tmux OMX CLI/runtime, ask each interview round via `omx question`; after launching `omx question` in a background terminal, wait for that terminal to finish and read the JSON answer before continuing; preserve the leader pane with `OMX_QUESTION_RETURN_PANE=$TMUX_PANE` when invoking it through Bash/tool paths. Outside tmux or native surfaces that cannot render `omx question` should use the native structured question path when available; otherwise ask exactly one concise plain-text question and wait for the answer.
 
 </keyword_detection>
@@ -132,7 +134,23 @@ Team mode is the structured multi-agent surface. Use it when durable staged coor
 </team_pipeline>
 
 <team_model_resolution>
-Team/Swarm worker model precedence: explicit `OMX_TEAM_WORKER_LAUNCH_ARGS`, inherited leader `--model`, then low-complexity default from `OMX_DEFAULT_SPARK_MODEL` (legacy alias: `OMX_SPARK_MODEL`). Normalize model flags to one canonical `--model <value>` entry and use `OMX_DEFAULT_FRONTIER_MODEL` / `OMX_DEFAULT_SPARK_MODEL` rather than guessing defaults.
+Team/Swarm worker model selection (for worker roles only, NOT native Codex subagents):
+
+- At launch, a per-worker `OMX_TEAM_WORKER_LAUNCH_ARGS --model` that differs from the inherited leader `--model` wins.
+- Otherwise, `.omx-config.json` `agentModels[role]` or an applicable role `exactModel` pin is selected before the inherited leader model. Team worker `exactModel` pins apply regardless of provider.
+- If neither a per-agent override nor an applicable exact pin applies, an inherited leader `--model` wins before the computed role fallback.
+- When no inherited model is available, the role fallback resolves in this order:
+  1. `.omx-config.json` `agentModels[role]` override
+  2. Role ending in `-low` → spark chain
+  3. Role `exactModel` pin (`planner`/`architect`/`researcher` → `deepseek-v4.1-flash`); Team pins apply regardless of provider
+  4. `executor` special case → frontier/main chain
+  5. Otherwise by `modelClass`: `fast` → spark; `frontier` → main; `standard` → standard lane
+
+Role defaults use `OMX_DEFAULT_FRONTIER_MODEL`, `OMX_DEFAULT_STANDARD_MODEL`, or `OMX_DEFAULT_SPARK_MODEL` as applicable; the legacy spark alias is `OMX_SPARK_MODEL`. The spark chain does not fall back to the `config.toml` root model.
+
+For native Codex subagents, model selection is different: they inherit the active `config.toml`/provider model except for pinned roles (`planner`/`architect`/`researcher` with built-in providers) and per-agent `agentModels` overrides. Environment variables like `OMX_DEFAULT_FRONTIER_MODEL` do NOT set the native TOML `model` field or change native runtime model selection; they configure Team worker fallback and mode resolution and may be reflected in generated `resolved_model` or AGENTS.md model-table metadata.
+
+Normalize model flags to one canonical `--model <value>` entry. Use `OMX_DEFAULT_FRONTIER_MODEL` / `OMX_DEFAULT_STANDARD_MODEL` / `OMX_DEFAULT_SPARK_MODEL` for Team worker defaults, not for native subagent configuration.
 </team_model_resolution>
 
 <!-- OMX:MODELS:START -->
@@ -142,31 +160,27 @@ Auto-generated by `omx setup` from the current `config.toml` plus OMX model over
 
 | Role | Model | Reasoning Effort | Use Case |
 | --- | --- | --- | --- |
-| Frontier (leader) | `gpt-5.6-sol` | high | Primary leader/orchestrator for planning, coordination, and frontier-class reasoning. |
-| Spark (explorer/fast) | `gpt-5.6-luna` | low | Fast triage, explore, lightweight synthesis, and low-latency routing. |
-| Standard (subagent default) | `gpt-5.6-sol` | high | Default standard-capability model for installable specialists and secondary worker lanes unless a role is explicitly frontier or spark. |
-| `explore` | `gpt-5.6-luna` | low | Fast codebase search and file/symbol mapping (fast-lane, fast) |
-| `analyst` | `gpt-5.6-sol` | medium | Requirements clarity, acceptance criteria, hidden constraints (frontier-orchestrator, frontier) |
-| `planner` | `gpt-5.6-sol` | medium | Task sequencing, execution plans, risk flags (frontier-orchestrator, frontier) |
-| `architect` | `gpt-5.6-sol` | xhigh | System design, boundaries, interfaces, long-horizon tradeoffs (frontier-orchestrator, frontier) |
-| `debugger` | `gpt-5.6-sol` | high | Root-cause analysis, regression isolation, failure diagnosis (deep-worker, standard) |
-| `executor` | `gpt-5.6-sol` | medium | Code implementation, refactoring, feature work (deep-worker, standard) |
-| `team-executor` | `gpt-5.6-sol` | medium | Supervised team execution for conservative delivery lanes (deep-worker, frontier) |
-| `verifier` | `gpt-5.6-sol` | high | Completion evidence, claim validation, test adequacy (frontier-orchestrator, standard) |
-| `code-reviewer` | `gpt-5.6-sol` | high | Comprehensive review across all concerns (frontier-orchestrator, frontier) |
-| `dependency-expert` | `gpt-5.6-sol` | high | External SDK/API/package evaluation (frontier-orchestrator, standard) |
-| `test-engineer` | `gpt-5.6-sol` | medium | Test strategy, coverage, flaky-test hardening (deep-worker, frontier) |
-| `designer` | `gpt-5.6-sol` | high | UX/UI architecture, interaction design (deep-worker, standard) |
-| `writer` | `gpt-5.6-sol` | high | Documentation, migration notes, user guidance (fast-lane, standard) |
-| `git-master` | `gpt-5.6-sol` | high | Commit strategy, history hygiene, rebasing (deep-worker, standard) |
-| `code-simplifier` | `gpt-5.6-sol` | high | Simplifies recently modified code for clarity and consistency without changing behavior (deep-worker, frontier) |
-| `researcher` | `gpt-5.6-terra` | high | External documentation and reference research (fast-lane, standard) |
-| `prometheus-strict-metis` | `gpt-5.6-sol` | high | Prometheus Strict requirements interviewer and ambiguity mapper (frontier-orchestrator, frontier) |
-| `prometheus-strict-momus` | `gpt-5.6-sol` | high | Prometheus Strict adversarial plan critic and risk challenger (frontier-orchestrator, frontier) |
-| `prometheus-strict-oracle` | `gpt-5.6-sol` | high | Prometheus Strict implementation readiness verifier and handoff judge (frontier-orchestrator, standard) |
-| `critic` | `gpt-5.6-sol` | high | Plan/design critical challenge and review (frontier-orchestrator, frontier) |
-| `scholastic` | `gpt-5.6-sol` | high | Ontology-first reasoning reviewer: category mistakes, hidden assumptions, modality separation, scholastic critique, and minimal-repair proposals (frontier-orchestrator, frontier) |
-| `vision` | `gpt-5.6-sol` | low | Image/screenshot/diagram analysis (fast-lane, frontier) |
+| Frontier (leader) | `deepseek-v4.1-flash` | high | Primary leader/orchestrator for planning, coordination, and frontier-class reasoning. |
+| Spark (explorer/fast) | `deepseek-v4.1-flash` | low | Fast triage, explore, lightweight synthesis, and low-latency routing. |
+| Standard (subagent default) | `deepseek-v4.1-flash` | high | Default standard-capability model for installable specialists and secondary worker lanes unless a role is explicitly frontier or spark. |
+| `explore` | `deepseek-v4.1-flash` | low | Fast codebase search and file/symbol mapping (fast-lane, fast) |
+| `analyst` | `deepseek-v4.1-flash` | medium | Requirements clarity, acceptance criteria, hidden constraints (frontier-orchestrator, frontier) |
+| `planner` | `deepseek-v4.1-flash` | medium | Task sequencing, execution plans, risk flags (frontier-orchestrator, frontier) |
+| `architect` | `deepseek-v4.1-flash` | xhigh | System design, boundaries, interfaces, long-horizon tradeoffs (frontier-orchestrator, frontier) |
+| `debugger` | `deepseek-v4.1-flash` | high | Root-cause analysis, regression isolation, failure diagnosis (deep-worker, standard) |
+| `executor` | `deepseek-v4.1-flash` | medium | Code implementation, refactoring, feature work (deep-worker, standard) |
+| `team-executor` | `deepseek-v4.1-flash` | medium | Supervised team execution for conservative delivery lanes (deep-worker, frontier) |
+| `verifier` | `deepseek-v4.1-flash` | high | Completion evidence, claim validation, test adequacy (frontier-orchestrator, standard) |
+| `code-reviewer` | `deepseek-v4.1-flash` | high | Comprehensive review across all concerns (frontier-orchestrator, frontier) |
+| `dependency-expert` | `deepseek-v4.1-flash` | high | External SDK/API/package evaluation (frontier-orchestrator, standard) |
+| `test-engineer` | `deepseek-v4.1-flash` | medium | Test strategy, coverage, flaky-test hardening (deep-worker, frontier) |
+| `designer` | `deepseek-v4.1-flash` | high | UX/UI architecture, interaction design (deep-worker, standard) |
+| `writer` | `deepseek-v4.1-flash` | high | Documentation, migration notes, user guidance (fast-lane, standard) |
+| `git-master` | `deepseek-v4.1-flash` | high | Commit strategy, history hygiene, rebasing (deep-worker, standard) |
+| `code-simplifier` | `deepseek-v4.1-flash` | high | Simplifies recently modified code for clarity and consistency without changing behavior (deep-worker, frontier) |
+| `researcher` | `deepseek-v4.1-flash` | high | External documentation and reference research (fast-lane, standard) |
+| `critic` | `deepseek-v4.1-flash` | high | Plan/design critical challenge and review (frontier-orchestrator, frontier) |
+| `vision` | `deepseek-v4.1-flash` | low | Image/screenshot/diagram analysis (fast-lane, frontier) |
 <!-- OMX:MODELS:END -->
 
 <verification>
@@ -182,7 +196,7 @@ Verification loop: define the claim and success criteria, run the smallest valid
 </verification>
 
 <execution_protocols>
-Mode selection: use `$deep-interview` for unclear intent/boundaries; `$ralplan` for consensus on architecture, tradeoffs, or tests; `$team` for approved multi-lane work; `$ralph` for persistent single-owner completion/verification loops; otherwise execute directly in solo mode. Switch modes only when evidence shows the current lane is mismatched or blocked.
+Mode selection: follow `<delegation_rules>` above. Switch lanes only for a concrete unresolved ambiguity, coordination need, or blocker.
 
 Command routing: use normal Codex repository inspection tools/subagents as the default surface for simple read-only repository lookup tasks; use `omx sparkshell` only for explicit shell-native read-only evidence or bounded verification.
 When to use what:
@@ -202,7 +216,7 @@ Stop / escalate: stop when the task is verified complete, the user says stop/can
 Output contract: Default update/final shape: state current mode, action/result, and evidence or blocker/next step. Keep rationale once; do not restate the full plan every turn; expand only for risk, handoff, or explicit request.
 
 Anti-slop workflow:
-- Cleanup/refactor/deslop work still follows the same `$deep-interview` -> `$ralplan` -> `$team`/`$ralph` path; use `$ai-slop-cleaner` as a bounded helper inside the chosen execution lane, not as a competing top-level workflow.
+- Cleanup/refactor/deslop work follows the same lightweight workflow (`understand -> execute -> verify -> report`); use `$ai-slop-cleaner` as a bounded helper inside the chosen execution lane, not as a competing top-level workflow.
 - Write a cleanup plan before modifying code; lock existing behavior with regression tests first, then make one smell-focused pass at a time.
 - Prefer deletion over addition, and prefer reuse plus boundary repair over new layers.
 - No new dependencies without explicit request.
@@ -217,8 +231,38 @@ Use the `cancel` skill to end active execution modes when work is done and verif
 </cancellation>
 
 <state_management>
-Hooks own normal skill-active and workflow-state persistence under `.omx/state/`. OMX runtime state lives under `.omx/`; do not manually duplicate hook-owned activation state unless recovering from missing or stale state.
+See [Durable Runtime Invariants](#durable-runtime-invariants-canonical-ssot) for state ownership and hook boundaries. OMX runtime state lives under `.omx/`.
 </state_management>
+
+## Durable Runtime Invariants (canonical SSOT)
+
+This section is the single source of truth for durable state ownership, hook boundaries, cancellation, and Team coordination. Skills and role prompts reference it; they must not restate or weaken these rules.
+
+### State and hook ownership
+
+- Durable state is authoritative only in the current, proven session or Team scope. Compatibility discovery is read-only and never grants write authority.
+- Hooks own normal skill activation and workflow-state persistence under `.omx/state/`; skills do not duplicate or mutate hook-owned state except through documented recovery paths.
+- Native hook payloads, prompt labels, task text, cwd, environment, pointers, transcripts, markers, and local trackers are routing or diagnostic data, not ownership or write authority.
+- The Team state files and `omx team api ... --json` are the source of truth for task lifecycle and mailbox coordination.
+
+### Cancellation boundary
+
+- Cancellation parses and validates arguments before mutation, resolves one exact writable scope, freezes and revalidates target identity, mutates only proven targets, and leaves unrelated sessions, legacy roots, Team artifacts, and tmux sessions untouched.
+- Ralph cancellation must satisfy its documented terminal post-conditions in the same scope; linked modes are handled only when the link is proven.
+- `--force` does not widen cancellation scope; it only removes the selected exact-session native-stop entry after the same authority checks. `--all` is unsupported.
+- Team cancellation requires exact frozen Team root, internal name, session, leader pane, and runtime identity. It fails closed when that proof is unavailable or changes; it must not enumerate or broadly kill Team sessions or recursively delete unrelated Team state.
+
+### Team protocol
+
+- Team runtime is explicit and outside the default workflow. Ultragoal does not auto-launch Team, and ordinary workflows do not silently become Team runs.
+- Workers ACK startup, claim before work, transition task status through the lifecycle API, use release only for rollback, and report verification evidence. Leaders own integration, final verification, and shutdown decisions.
+- Prefer durable state writes and `omx team api ... --json` dispatch. Direct `tmux send-keys` is fallback-only, never primary dispatch; manual pane actions require prior state/evidence checks.
+- Team shutdown waits for terminal task state and uses exact Team authority. It does not shut down active work unless explicitly aborting.
+
+### Ultragoal ownership
+
+- `.omx/ultragoal/goals.json` is the leader-owned plan and `.omx/ultragoal/ledger.jsonl` is its durable audit trail. Workers report task evidence only; they do not create worker ledgers, mutate Ultragoal artifacts, or checkpoint goals.
+- Shell commands and hooks do not mutate hidden Codex goal state. The active agent uses `get_goal`, `create_goal`, and `update_goal` only at the documented gates, then checkpoints with a fresh `get_goal` snapshot.
 
 ## Setup
 

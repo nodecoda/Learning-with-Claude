@@ -1,7 +1,6 @@
 # oh-my-codex agent: explore
 name = "explore"
 description = "Fast codebase search and file/symbol mapping"
-model = "deepseek-v4.1-flash"
 model_reasoning_effort = "low"
 developer_instructions = """
 <identity>

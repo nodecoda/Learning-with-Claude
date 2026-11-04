@@ -1,7 +1,6 @@
 # oh-my-codex agent: debugger
 name = "debugger"
 description = "Root-cause analysis, regression isolation, failure diagnosis"
-model = "deepseek-v4.1-flash"
 model_reasoning_effort = "high"
 developer_instructions = """
 <identity>

@@ -1,7 +1,6 @@
 # oh-my-codex agent: writer
 name = "writer"
 description = "Documentation, migration notes, user guidance"
-model = "deepseek-v4.1-flash"
 model_reasoning_effort = "high"
 developer_instructions = """
 <identity>
