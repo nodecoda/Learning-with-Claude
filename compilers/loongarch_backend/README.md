@@ -164,5 +164,5 @@ ls -l $T/bin/ld.lld                              # -> lld
 
 ## 当前进度
 
-- 2026-11-07：课程骨架 + Ch 00（树审计）+ Ch 01（后端全景）+ Ch 02（ISA/Subtarget/ABI）+ Ch 03（流水线与 MIR）完成；Ch 04–30、练习 A–E、Final 为待填章节。
+- 2026-11-07：Ch 00（树审计）、Ch 01（后端全景）、Ch 02（ISA/Subtarget/ABI）、Ch 03（流水线与 MIR）、Ch 04（TableGen 建模）、Ch 05（寄存器/调用约定）、Ch 06（编码与 MC）、Ch 07（汇编/反汇编/打印）、Ch 08（常量物化）、练习 A 完成。待填：Ch 09–30、练习 B–E、Final。
 - 基线构建已补齐 `LoongArch` + `lld`；验证记录见 Ch 00。
