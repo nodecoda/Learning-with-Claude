@@ -151,7 +151,15 @@ body:             |
 
 两者都在 late 阶段，但一个问题关于“条件”，一个关于“距离”。`LoongArchPassConfig::addPreEmitPass()` 里加的是 `BranchRelaxationPassID`，不是 `LateBranchOpt`。
 
-`LateBranchOpt` 的注册位置需要看 `LoongArchTargetMachine.cpp` 的 pass 配置（本树在 `addPreEmitPass` 附近，具体行号见 20.6）。
+`LateBranchOpt` 注册在 `LoongArchPassConfig::addMachineLateOptimization()`（`LoongArchTargetMachine.cpp:251-255`），且只在 `-O1+` 添加：
+
+```cpp
+void LoongArchPassConfig::addMachineLateOptimization() {
+  if (TM->getOptLevel() != CodeGenOptLevel::None)
+    addPass(createLoongArchLateBranchOptPass());
+  TargetPassConfig::addMachineLateOptimization();
+}
+```
 
 ---
 
