@@ -16,7 +16,17 @@
 | `clang/test/CodeGen/LoongArch` | **48** | clang IR 生成（ABI、builtin） |
 | `clang/test/Driver` 中文件名含 loongarch | **28** | driver 选项 |
 
-对比：整个 `lld/test/ELF` 是 2,049 个用例，`clang/test/Driver` 是 1,532 个。**LoongArch 在 lld 里只占 2.3%**，但 relaxation 相关的用例密度很高——这就是 Ch 12/29 那类 bug 容易漏的原因。
+对比：整个 `lld/test/ELF` 是 2,049 个用例，`clang/test/Driver` 是 1,532 个。
+2026-11-08 在本树重跑，五个子集全绿：
+
+```text
+CodeGen/LoongArch        978 / 978 passed
+MC/LoongArch             335 / 335 passed
+lld/test/ELF (filter)     48 /  48 passed
+clang/CodeGen/LoongArch   48 /  48 passed
+clang/Driver  (filter)    28 /  28 passed
+```
+**LoongArch 在 lld 里只占 2.3%**，但 relaxation 相关的用例密度很高——这就是 Ch 12/29 那类 bug 容易漏的原因。
 
 每个目录还有一个 `lit.local.cfg`：
 
