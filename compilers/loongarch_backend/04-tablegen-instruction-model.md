@@ -330,7 +330,18 @@ add.d $a0, $a1, $a2   # encoding: [0xa4,0x98,0x10,0x00]
 
 ---
 
-## 4.10 本章证据
+## 4.10 反直觉点
+
+1. **opcode 是自动编号的**：在 `.td` 中间插入一个 `def`，后面所有指令的 opcode 会整体后移。练习 A 实测新指令 `add.du` 的 opcode 是 457，就是这种平移的结果。
+2. **不是所有 DAG 节点都靠 pattern**：复杂寻址、多指令序列、特殊 ABI 走 `LoongArchISD::*` + `LowerOperation`（4.6）。
+3. **漏写 `Sched<>` 不会编译失败**：`CompleteModel = 0` 时只是静默降级，性能问题不会在测试里暴露（Ch 23）。
+4. **编码不是 pattern 生成的**：pattern 只决定“选哪条指令”，32 位编码由 `Fmt*` 的位域加 `MCCodeEmitter` 拼出来（4.1）。
+5. **同一个助记符可以有多个 `def`**（别名/不同操作数形式），读 `.td` 时不能假设“一助记符一指令”。
+6. **pattern 匹配失败不一定报错**：可能落到 `Select()` 里的 `ComplexPattern` 分支，或者被 `LowerOperation` 提前改写。
+
+---
+
+## 4.11 本章证据
 
 | 结论 | 命令/源码 |
 |---|---|
@@ -344,7 +355,7 @@ add.d $a0, $a1, $a2   # encoding: [0xa4,0x98,0x10,0x00]
 
 ---
 
-## 4.11 练习
+## 4.12 练习
 
 1. 手算 `sub.d $a3,$a4,$a5` 的 32 位编码，再用 `llvm-mc -show-encoding` 验证。
 2. 在 `/tmp` 里复制一份 `LoongArchInstrInfo.td`，把 `ADD_D` 的 opcode 改成 `0x00108001`，重新生成 `-gen-instr-info`，观察 `ADD_D` 的 opcode 编号和编码是否变化（不要改真实树）。
@@ -353,6 +364,6 @@ add.d $a0, $a1, $a2   # encoding: [0xa4,0x98,0x10,0x00]
 
 ---
 
-## 4.12 下一步
+## 4.13 下一步
 
 下一章看寄存器与调用约定：`GPR`/`FPR`/`CFR` 的层级、callee-saved 集合，以及它们如何决定 prologue 里存哪些寄存器。

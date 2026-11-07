@@ -303,7 +303,18 @@ def LA64 : HwMode<[IsLA64]>;
 
 ---
 
-## 1.8 本章证据
+## 1.8 反直觉点
+
+1. **LoongArch 只有 SelectionDAG，没有 GlobalISel。** 读代码时不要找 `LoongArchGlobalISel`，它不存在（1.6 的 6.1 节）。
+2. **伪指令展开不是一处，而是三处**：Pre-RA、Post-RA、原子伪指令各有一个 pass（1.6 的 6.2 节）。
+3. **成对重定位 + `MO_RELAX` 是 LoongArch 特有的设计**，不能直接套 RISC-V 的 relaxation 经验（1.6 的 6.3 节）。
+4. **LA32/LA64 共用一套指令描述**，靠 `HwMode` 和 `.w`/`.d` 区分，而不是两份 `InstrInfo.td`（1.6 的 6.4 节）。
+5. **LSX/LASX 是两套寄存器类、一套 lowering 逻辑**：`LSX128`/`LASX256` 共享同一个 `HwEncoding`（1.6 的 6.5 节）。
+6. **指令选择不是一条 pass**：`loongarch-isel` 之后还有 `finalize-isel` 和两个 `expand-pseudo`，只盯 isel 会漏掉一半的“指令变形”。
+
+---
+
+## 1.9 本章证据
 
 ```bash
 # 1. target 注册
@@ -330,7 +341,7 @@ add.d $a0, $a1, $a2   # encoding: [0xa4,0x98,0x10,0x00]
 
 ---
 
-## 1.9 练习
+## 1.10 练习
 
 1. 用 `llc -stop-after=loongarch-isel` 输出 MIR，找出 `ADD_D` 出现的位置，确认它前面是否还有 `Pseudo*`。
 2. 把 `-O2` 换成 `-O0`，对比 `-debug-pass=Structure` 的差异；哪些 pass 消失了？
@@ -339,6 +350,6 @@ add.d $a0, $a1, $a2   # encoding: [0xa4,0x98,0x10,0x00]
 
 ---
 
-## 1.10 下一步
+## 1.11 下一步
 
 下一章把地图上的“类型/Feature/ABI”这一层拆开：LA32/LA64 到底差在哪、`-mabi=lp64d` 如何变成 `e_flags`、寄存器名和调用约定怎么对应。

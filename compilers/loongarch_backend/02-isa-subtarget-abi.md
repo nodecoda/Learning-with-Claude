@@ -361,7 +361,19 @@ warning: 'lp64f' has not been standardized
 
 ---
 
-## 2.9 本章证据
+## 2.9 反直觉点
+
+1. **LA64 的默认 code model 是 Medium，不是 Small**（2.6）。`CodeModel::Medium` 才需要 `lu32i.d/lu52i.d` 兜底。
+2. **`-march=loongarch64` 只带 `d`，不带 `lsx`**；带 `lsx` 的是 `generic-la64`。写向量测试只给 `-march=loongarch64` 会得到标量展开（2.3）。
+3. **`la464`/`la664` 的 feature 集合带 `lasx`**，而兼容名 `loongarch64` 连 `lsx` 都没有。
+4. **LA32 默认 ABI 名义上是 `ilp32d`，实际会回退软浮点**：`loongarch32` CPU 只映射 `32bit` feature，后端认为 `ilp32d` 非法（Ch 24 有实测 warning 与 `__addsf3`）。
+5. **`TuneSlowMOVCF2GR` 只在 `la464` 上**，`la664` 没有——同一个 `movcf2gr` 在两个 CPU 上的选指策略不同（2.3）。
+6. **Prefetch 不是所有 CPU 都开**：只有 `la464`/`la664` 把 `PrefetchDistance` 设成 200（2.3）。
+7. **`$zero` 只是 `$r0` 的别名**，MIR 里只认 `$r0`；汇编里两种写法都能过。
+
+---
+
+## 2.10 本章证据
 
 | 结论 | 源码/命令 |
 |---|---|
@@ -377,7 +389,7 @@ warning: 'lp64f' has not been standardized
 
 ---
 
-## 2.10 练习
+## 2.11 练习
 
 1. 用 `llc -mattr=+32s` 和 `-mattr=-32s` 编译 `llvm/test/CodeGen/LoongArch/bitreverse.ll`，解释 `revb`/`bitrev` 的差异。
 2. 构造 `-mabi=lp64f` 的编译，观察 warning，并检查 `.o` 的 `e_flags`。
@@ -386,6 +398,6 @@ warning: 'lp64f' has not been standardized
 
 ---
 
-## 2.11 下一步
+## 2.12 下一步
 
 下一章把“编译一次”拆成真实的 pass 序列：`llc -debug-pass=Structure` 的每一行是什么、`-stop-after` 停在哪、MIR 里怎么看 `PseudoLA_TLS_LE`。

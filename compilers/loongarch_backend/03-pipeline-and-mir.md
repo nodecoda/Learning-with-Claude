@@ -243,7 +243,18 @@ $T/bin/llvm-lit -sv llvm/test/CodeGen/LoongArch/O0-pipeline.ll llvm/test/CodeGen
 
 ---
 
-## 3.7 本章证据
+## 3.7 反直觉点
+
+1. **两个 expand-pseudo 分居寄存器分配前后**，`prera-expand-pseudo` 和 `expand-pseudo` 不是同一个 pass 的两个名字（3.1）。
+2. **`loongarch-late-branch-opt` 在 `shrink-wrap` 之后**：那时 prologue/epilogue 已经插入，分支折叠必须考虑这些指令（3.2）。
+3. **`-run-pass` 只吃 MIR，不吃 `.ll`**；`-stop-after` 的输出正好可以喂回去（3.4）。
+4. **MIR 里没有 `$zero`、没有 `RET`**：用 `$r0`、`PseudoRET`（Ch 28 有完整实测报错）。
+5. **`-O0` 不是“没有 pass”**：它仍跑 legalize、isel、RA，只是砍掉优化分支并改用 `regallocfast`（3.3）。
+6. **`O0-pipeline.ll` 专门锁 pass 结构**：在 `add*Pass` 里加一个优化 pass，可能同时改变 O0 的行为并被这个测试抓到。
+
+---
+
+## 3.8 本章证据
 
 | 结论 | 命令/源码 |
 |---|---|
@@ -257,7 +268,7 @@ $T/bin/llvm-lit -sv llvm/test/CodeGen/LoongArch/O0-pipeline.ll llvm/test/CodeGen
 
 ---
 
-## 3.8 练习
+## 3.9 练习
 
 1. 用 `-stop-after=finalize-isel`、`-stop-after=machine-combiner`、`-stop-after=greedy` 各输出一份 MIR，按顺序观察 `ADD_D` 的操作数从虚拟寄存器变成物理寄存器。
 2. 把 `tlsle.ll` 的 `localexec` 改成 `initialexec`，看 ISel 后的伪指令变成什么（提示：`PseudoLA_TLS_IE`）。
@@ -266,6 +277,6 @@ $T/bin/llvm-lit -sv llvm/test/CodeGen/LoongArch/O0-pipeline.ll llvm/test/CodeGen
 
 ---
 
-## 3.9 下一步
+## 3.10 下一步
 
 Part 0 结束。接下来进入 Part 1：从 `LoongArchInstrFormats.td` 开始，看一条指令的 32 位编码、汇编文本、fixup 和重定位是怎么被 TableGen 生成的。

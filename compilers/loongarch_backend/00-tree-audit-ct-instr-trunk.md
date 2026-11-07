@@ -449,7 +449,18 @@ LLVM 后端永远输出 canonical 顺序。**这意味着 #239812 不是“LLVM 
 
 ---
 
-## 0.10 本章证据清单
+## 0.10 反直觉点
+
+1. **构建缺 target/project 时，lit 报的是 `UNSUPPORTED` 而不是 `FAIL`。** 测试报告可以全绿，但一条 LoongArch 测试都没跑——这是最危险的假绿（0.5 的 5.1 节实测）。
+2. **`PENDING=0` 只说明构建比源码新，不说明它覆盖了当前任务。** 任务改 lld，构建却没有 lld，`status.sh` 依然正常。
+3. **重配构建后 `llvm-config` 也要重编。** 否则 `lld/test/lit.cfg.py` 仍从旧的 `--targets-built` 读到 `X86 AArch64`，继续把测试标成 `UNSUPPORTED`（0.5 的 5.1 节实测教训）。
+4. **LLVM 后端永远生成 canonical 顺序**（marker 在配对重定位之后）。所以 #239812 不是“LLVM 生成错对象”，而是“lld 对 ABI 允许的输入不够健壮”（0.5 的 5.5 节）。
+5. **“能编译”不等于“能提 PR”。** 本树 ahead 1 / behind 19，提交前必须 rebase 到最新 `upstream/main` 并重跑测试。
+6. **目录名不能推断内容。** `ct-instr-trunk` 来自任务命名，不代表这棵树只含“ct 指令”相关代码；实际主线是 LoongArch + 一条 lld 修复。
+
+---
+
+## 0.11 本章证据清单
 
 | 结论 | 命令 | 结果 |
 |---|---|---|
@@ -464,7 +475,7 @@ LLVM 后端永远输出 canonical 顺序。**这意味着 #239812 不是“LLVM 
 
 ---
 
-## 0.11 练习
+## 0.12 练习
 
 1. **复现修复前的错误。** 在不修改当前分支的前提下，用 `git worktree` 或 `git stash` 造一个“去掉 `relaxConsumer` 逻辑”的临时版本，重编 `lld`，链接 hint-first 对象，确认得到 `addi.d $a0,$a0,0` 且 QEMU SIGSEGV。记录你改的是哪几行。
 2. **补一条边界测试。** 构造“`HI20` 的 `RELAX` 在前、`ADD` 的 `RELAX` 在后、`LO12` 的 `RELAX` 在前”的对象，预测输出并验证。
@@ -473,7 +484,7 @@ LLVM 后端永远输出 canonical 顺序。**这意味着 #239812 不是“LLVM 
 
 ---
 
-## 0.12 下一步
+## 0.13 下一步
 
 - 想知道这棵树里每个文件在整条编译链的哪一站：读 [Ch 01 后端全景](./01-backend-map.md)。
 - 想直接看这个修复涉及的 ISA/ABI 背景：跳到 [Ch 02](./02-isa-subtarget-abi.md) 的 TLS/代码模型小节和 [Ch 12](./12-lld-relocations-and-relaxation.md)。

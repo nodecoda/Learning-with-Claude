@@ -329,7 +329,18 @@ pcalau12i $a0, %pc_hi20(sym)   # encoding: [0x04,0x00,0x00,0x1a]
 
 ---
 
-## 6.10 本章证据
+## 6.10 反直觉点
+
+1. **fixup 与 relocation 是两件事**：前者在汇编期改指令位域，后者留给链接器（6.4）。
+2. **fixup 的位域位置是手写表**：`abs_hi20` 从 bit 5 开始、20 位宽；`abs_lo12` 从 bit 10 开始、12 位宽（6.4.1）。
+3. **重定位类型由 `ELFObjectWriter` 选**，不是 `MCCodeEmitter`；同一个 fixup 可能映射到不同的 `R_LARCH_*`（6.8）。
+4. **编码是手写 shift/or**：TableGen 只提供 `Fmt*` 的位域布局，真正的拼接在 `encodeInstruction` 里（6.2/6.3）。
+5. **分支 fixup 会检查 4 字节对齐和 ±128MB 范围**，越界在汇编期就报错，不会留到链接器（6.4.1）。
+6. **`PseudoAddTPRel_D`/`PseudoVREPLI_*` 是编码层特例**：只读 `.td` 的 pattern 会漏掉它们（6.5/6.6）。
+
+---
+
+## 6.11 本章证据
 
 | 结论 | 命令/源码 |
 |---|---|
@@ -345,7 +356,7 @@ pcalau12i $a0, %pc_hi20(sym)   # encoding: [0x04,0x00,0x00,0x1a]
 
 ---
 
-## 6.11 练习
+## 6.12 练习
 
 1. 手算 `addi.d $a0, $a1, -4` 的编码，再用 `llvm-mc -show-encoding` 验证（注意 12 位立即数的有符号编码）。
 2. 用 `llvm-mc -show-encoding` 观察 `%b16`、`%b21`、`%b26` 的 fixup offset/bits，解释为什么 `b16` 的 offset 是 10。
@@ -354,6 +365,6 @@ pcalau12i $a0, %pc_hi20(sym)   # encoding: [0x04,0x00,0x00,0x1a]
 
 ---
 
-## 6.12 下一步
+## 6.13 下一步
 
 下一章看 MC 层的另外三个入口：`AsmParser`（文本 → `MCInst`）、`Disassembler`（字节 → `MCInst`）和 `InstPrinter`（`MCInst` → 文本），并用 `llvm-mc -disassemble` 做往返。
