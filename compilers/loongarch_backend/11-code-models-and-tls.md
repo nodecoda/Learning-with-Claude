@@ -164,7 +164,9 @@ add.d	$a0, $a0, $tp, %le_add_r(t)
 ld.d	$a0, $a0, %le_lo12_r(t)
 ```
 
-这就是 #239812 里那条序列。`_r` 后缀表示“**relaxable**”：每条指令后面都会跟一个 `R_LARCH_RELAX` 标记，链接器可以把三条收缩成 `addi.d $a0, $tp, 0`。
+这就是 #239812 里那条序列。`_r` 后缀表示“**relaxable**”：开启 `+relax` 时，汇编器会在每条指令后面追加一个 `R_LARCH_RELAX` 标记，链接器可以把三条收缩成 `addi.d $a0, $tp, 0`。
+
+**注意**：`llvm-mc`/`llc` 默认**不带** `+relax`，此时 `llvm-readobj -r` 只能看到 3 条 `R_LARCH_TLS_LE_*_R`，看不到 `R_LARCH_RELAX`；加 `-mattr=+relax` 才会成对出现。`clang` 驱动默认传 `+relax`（`-mno-relax` 才关）。这一点在 Ch 12 有实测对照。
 
 **关键点**：`lu12i.w/add.d/addi.d` 用的是 `%le_hi20_r`/`%le_add_r`/`%le_lo12_r`，而 `%le_hi20`（无 `_r`）是**不参与 relaxation** 的版本。两者生成的指令相同、重定位不同。写测试或改 lowering 时搞混这两个，就会出现“能链接但没收缩”的诡异现象。
 
