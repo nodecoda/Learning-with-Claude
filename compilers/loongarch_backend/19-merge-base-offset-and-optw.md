@@ -220,4 +220,4 @@ pre-RA expand pseudo → MergeBaseOffset → ... → MachineSSAOptimization(含 
 
 ## 19.7 下一步
 
-下一章看 `MachineCombiner` 与 `LateBranchOpt`：前者在 RA 后重组指令链（如 `a*b+c` → `fmadd`），后者把远距离分支改成短跳转。
+下一章看 `MachineCombiner` 与 `LateBranchOpt`：前者在 LoongArch 上目前没有 pattern（空转），后者把“条件静态可知”的条件分支折成无条件跳转。
