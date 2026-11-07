@@ -301,6 +301,28 @@ PR 描述**不要复制粘贴整段 diff**；reviewer 看的是“问题是否�
 
 ---
 
-## 29.13 下一步
+## 29.13 延伸阅读
+
+1. **LLVM commit message 规范** — `llvm/docs/DeveloperPolicy.md`
+   - 读什么：`### Commit messages` 整节，重点看标题/正文分离、`[组件]` 前缀、对 issue 的引用，以及 squash 工作流下“合并前重写 PR 描述”的要求。
+   - 学到什么：29.6 的四段结构不是个人风格，而是政策建议的实例；读完能解释为什么标题要短、body 要写 rationale、为什么 PR 描述要在合并前做最后一次编辑。
+   - 前提：读过 29.6；知道本树当前的 commit/PR 状态。
+
+2. **AI 辅助的披露边界** — `llvm/docs/AIToolPolicy.md`
+   - 读什么：`## Policy`、`## Details`、`## Examples` 三节，重点看 human-in-the-loop、建议由贡献者本人撰写 PR 描述、以及 `Assisted-by:` trailer 的用法。
+   - 学到什么：29.6 里的 `Assisted-by: Codex (...)` 为什么是政策要求；补上 `AIToolPolicy.md:25-26` 之外的完整边界——哪些自动化被禁止、哪些需要人工复核、贡献者要对内容负什么责任。
+   - 前提：读过 29.6、29.10；知道该补丁使用了 AI 辅助。
+
+3. **`relax()` 状态机的完整上下文** — `lld/ELF/Arch/LoongArch.cpp`
+   - 读什么：`relaxable()`（约 1105 行）和 `relax()` 中 `case R_LARCH_TLS_LE_HI20_R`/`R_LARCH_TLS_LE_ADD_R`/`R_LARCH_TLS_LE_LO12_R` 的分支（约 1349–1367 行）；先看 `remove` 的取值，再看 `tlsLeRelaxedAt` 的更新。
+   - 学到什么：29.3–29.4 只展示了补丁前后的片段；读完整状态机能看清 `remove` 如何驱动 `relaxTlsLe`、为什么游标记录的是序列起点而不是当前重定位。这样能判断补丁的最小性，也能预判 reviewer 关于“`+8` 是不是 magic number”的问题。
+   - 前提：读过 Ch 12 的 LoongArch 重定位/relaxation 和本章 29.2–29.4；能读基础 C++ 状态机。
+
+4. **YAML 回归测试逐行读** — `lld/test/ELF/loongarch-tls-le-relax-order.s`
+   - 读什么：从 `# RUN:` 行到 `canonical`/`hint_first` 两个符号的 YAML 描述，重点看 offset 8 处两条 relocation 的顺序差异，以及末尾 `CANONICAL`/`HINT-FIRST` 断言。
+   - 学到什么：学会用 `yaml2obj` 直接描述 `.rela.text`，构造汇编器造不出的输入；理解为什么测试要同时保留 canonical 和 hint-first 两个符号，才能证明“只有顺序不同”。29.5 只讲了原则，这里补上逐行读法。
+   - 前提：读过 29.5；知道 ELF relocation 的 offset/type/addend 字段（Ch 12）。
+
+## 29.14 下一步
 
 最后一章讲“长期维护”：怎么 triage、怎么选 issue、怎么判断一个 bug 该归给后端还是归给 lld、以及如何避免成为“只会改测试”的贡献者。

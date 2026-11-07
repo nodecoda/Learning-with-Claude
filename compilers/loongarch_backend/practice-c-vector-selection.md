@@ -141,6 +141,156 @@ vadd.w	$vr1, $vr1, $vr1
 
 ---
 
-## C.8 下一步
+## C.8 参考解答
+
+> 复核环境：2026-11-08，`llc` 来自 `/home/ubuntu/llvm/builds/ct-instr-trunk/bin`，源码行号来自本树 `ct-instr-trunk`。
+
+<details>
+<summary>C.1：`<8 x i32> add` 在 `+lsx` / `+lasx` 下差在哪？</summary>
+
+```bash
+$T/bin/llc -mtriple=loongarch64-unknown-linux-gnu -mattr=+lasx -O2 x.ll -o -
+$T/bin/llc -mtriple=loongarch64-unknown-linux-gnu -mattr=+lsx  -O2 x.ll -o -
+```
+
+实测：
+
+```text
+# +lasx
+xv:
+	xvadd.w	$xr0, $xr0, $xr0
+	ret
+
+# +lsx
+xv:
+	vadd.w	$vr0, $vr0, $vr0
+	vadd.w	$vr1, $vr1, $vr1
+	ret
+```
+
+`+lsx` 下不是“`xvadd.w` 没匹配上”，而是 `<8 x i32>` 这个类型根本没有被注册成合法类型，被类型合法化拆成两个 `<4 x i32>`，然后各自选 `vadd.w`。判断位置：`-print-before=legalize-types` / `-print-after=legalize-types`，看拆分发生在 isel 之前还是之后。
+
+</details>
+
+<details>
+<summary>C.2：谁决定 128 位还是 256 位？</summary>
+
+`LoongArchISelLowering.cpp` 里注册寄存器类的代码（实测行号）：
+
+```text
+ 95:      MVT::v32i8, MVT::v16i16, MVT::v8i32, MVT::v4i64, MVT::v8f32, MVT::v4f64};
+101:  if (Subtarget.hasExtLASX())
+103:      addRegisterClass(VT, &LoongArch::LASX256RegClass);
+```
+
+完整逻辑是：
+
+```cpp
+static const MVT::SimpleValueType LASXVTs[] = {
+    MVT::v32i8, MVT::v16i16, MVT::v8i32, MVT::v4i64, MVT::v8f32, MVT::v4f64};
+if (Subtarget.hasExtLASX())
+  for (MVT VT : LASXVTs)
+    addRegisterClass(VT, &LoongArch::LASX256RegClass);
+```
+
+所以第一层是 **feature 决定类型合法性**：没有 LASX 就没有 `v8i32` 的寄存器类，类型必须被拆。第二层才是 lowering 里按 `VT.is256BitVector()` / `hasExtLASX()` 选具体指令。
+
+</details>
+
+<details>
+<summary>C.3：`lowerVECTOR_SHUFFLE` 里第一处 256 位分支在哪？</summary>
+
+实测源码位置：
+
+```text
+3596: SDValue LoongArchTargetLowering::lowerVECTOR_SHUFFLE(SDValue Op, ...
+3640:   if (VT.is256BitVector())
+3641:     return lower256BitShuffle(DL, OrigMask, VT, V1, V2, DAG, Subtarget);
+3492: static SDValue lower256BitShuffle(const SDLoc &DL, ArrayRef<int> Mask, ...
+```
+
+`lowerVECTOR_SHUFFLE` 先处理 undef mask、非法 mask，然后按 128/256 位分派；256 位走 `lower256BitShuffle`。`lower256BitShuffle` 内部再按 mask 模式选 `xvshuf.*`、`xvpermi.*` 等。
+
+理解这一点后，排查顺序是：feature/类型注册 → `lower256BitShuffle` 的具体模式 → 最后才是 DAG pattern。
+
+</details>
+
+<details>
+<summary>C.4：双 prefix 测试怎么写？`update_llc_test_checks.py` 能直接生成吗？</summary>
+
+RUN 行写两个 prefix：
+
+```asm
+; RUN: llc -mtriple=loongarch64-unknown-linux-gnu -mattr=+lsx  < %s | FileCheck %s --check-prefix=LSX
+; RUN: llc -mtriple=loongarch64-unknown-linux-gnu -mattr=+lasx < %s | FileCheck %s --check-prefix=LASX
+
+define <8 x i32> @xv(<8 x i32> %a) {
+  %r = add <8 x i32> %a, %a
+  ret <8 x i32> %r
+}
+
+; LSX-LABEL: xv:
+; LSX: vadd.w $vr0, $vr0, $vr0
+; LSX: vadd.w $vr1, $vr1, $vr1
+; LASX-LABEL: xv:
+; LASX: xvadd.w $xr0, $xr0, $xr0
+```
+
+`update_llc_test_checks.py` 默认只生成一个 `CHECK` prefix；双 prefix 要么手动写，要么跑两次再合并。验证时不必进 lit 测试套件，直接跑 RUN 行即可：
+
+```bash
+$T/bin/llc -mtriple=loongarch64-unknown-linux-gnu -mattr=+lsx  < t.ll | $T/bin/FileCheck t.ll --check-prefix=LSX
+$T/bin/llc -mtriple=loongarch64-unknown-linux-gnu -mattr=+lasx < t.ll | $T/bin/FileCheck t.ll --check-prefix=LASX
+```
+
+实测两条都返回 0（打印 `LSX-OK` / `LASX-OK`）。注意：`llvm-lit` 只发现带测试套件配置的路径，单独把 `.ll` 放在 `/tmp` 下跑 `llvm-lit` 会报 “unable to find test suite”。
+
+</details>
+
+<details>
+<summary>C.5：把 `add` 换成 `sub` / `mul` 会怎样？</summary>
+
+`mul`：
+
+```bash
+$T/bin/llc -mtriple=loongarch64-unknown-linux-gnu -mattr=+lasx -O2 s.ll -o - | grep xv
+```
+
+实测：
+
+```text
+	xvmul.w	$xr0, $xr0, $xr0
+```
+
+`sub` 则**看不到 `xvsub.w`**，因为 `sub %a, %a` 被 DAG combine 折成零向量。实测 `xs` 的函数体是：
+
+```text
+	xvrepli.b	$xr0, 0
+	ret
+```
+
+这是练习里最容易误判的一条：不是选指失败，而是运算本身被优化掉了。想观察 `xvsub.w`，要换成两个不同操作数：
+
+```llvm
+define <8 x i32> @xs(<8 x i32> %a, <8 x i32> %b) {
+  %r = sub <8 x i32> %a, %b
+  ret <8 x i32> %r
+}
+```
+
+这时实测输出：
+
+```text
+	xvsub.w	$xr0, $xr0, $xr1
+	ret
+```
+
+结论：验证某条指令“有没有被选上”时，先确认测试 IR 没有被常量折叠/恒等式化简掉。
+
+</details>
+
+---
+
+## C.9 下一步
 
 Part 4 进入机器层：伪指令展开（Ch 18）、`MergeBaseOffset` 与 `OptWInstrs`（Ch 19）、`MachineCombiner` 与 `LateBranchOpt`（Ch 20）、原子与内存屏障（Ch 21）、死定义与寄存器信息（Ch 22）、调度模型与 `llvm-mca`（Ch 23）。

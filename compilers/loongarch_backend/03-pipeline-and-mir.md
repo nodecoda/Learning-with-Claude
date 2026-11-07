@@ -277,6 +277,28 @@ $T/bin/llvm-lit -sv llvm/test/CodeGen/LoongArch/O0-pipeline.ll llvm/test/CodeGen
 
 ---
 
-## 3.10 下一步
+## 3.10 延伸阅读
+
+1. **MIR 语法与单 pass 测试** — `llvm/docs/MIRLangRef.md`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：`## MIR Testing Guide`（`-run-pass`、`-stop-after`/`-stop-before`、`-simplify-mir`）、`## High Level Structure`、`### Machine Instructions`、`### Machine Operands`。
+   - 学到什么：把 3.4 的最小 MIR 集补全：`target-flags(...)`、`implicit`、`registers:` 在官方语法中的位置，以及如何把 `-stop-after` 输出改写成稳定的单 pass 测试。
+   - 前提：用 `llc -stop-after=loongarch-isel` 看过一份 MIR（本章 3.4）。
+
+2. **七阶段模型与 target pass 的插入点** — `llvm/docs/CodeGenerator.md`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：`### The high-level design of the code generator` 的阶段列表，以及 `### Instruction Selection`、`### SSA-based Machine Code Optimizations`、`### Register Allocation`、`### Late Machine Code Optimizations`、`### Code Emission` 的导言。
+   - 学到什么：解释 3.1 的三段式为什么还能再细分，以及 `addILPOpts`、`addPreRegAlloc`、`addPreEmitPass2` 各自落在哪个官方阶段。
+   - 前提：知道 `MachineFunction`/`MachineInstr` 是什么（本章 3.4 或 Ch 01）。
+
+3. **pass 注册的真实代码** — `llvm/lib/Target/LoongArch/LoongArchTargetMachine.cpp`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：`LoongArchPassConfig` 的 `addIRPasses()`、`addInstSelector()`、`addMachineSSAOptimization()`、`addPreRegAlloc()`、`addMachineLateOptimization()`、`addPreEmitPass()`、`addPreEmitPass2()`。
+   - 学到什么：把 3.2 的实测序列和源码逐行对上；重点看 `addInstSelector()` 为什么返回 `false`。
+   - 前提：读过本章 3.2 的 `-debug-pass=Structure` 输出。
+
+4. **pass 结构回归锁的实际形态** — `llvm/test/CodeGen/LoongArch/O0-pipeline.ll`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：两条 RUN 行（loongarch32/loongarch64 + `-O0 --debug-pass=Structure`）、`REQUIRES: asserts`，以及 `CHECK-NEXT` 链里 `Fast Register Allocator`、`LoongArch Pre-RA pseudo instruction expansion pass`、`Post-RA pseudo instruction expansion pass` 等关键行。
+   - 学到什么：理解 3.6 的“改 `add*Pass` 会被测试抓到”具体怎么抓；同时看到 `-O0` 仍保留哪些 pass。
+   - 前提：知道 FileCheck 的 `CHECK-NEXT` 语义（可先读 `llvm/docs/CommandGuide/FileCheck.md`）。
+
+## 3.11 下一步
 
 Part 0 结束。接下来进入 Part 1：从 `LoongArchInstrFormats.td` 开始，看一条指令的 32 位编码、汇编文本、fixup 和重定位是怎么被 TableGen 生成的。

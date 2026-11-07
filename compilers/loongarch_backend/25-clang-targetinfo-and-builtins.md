@@ -242,6 +242,28 @@ case LoongArch::BI__builtin_loongarch_csrrd_d:
 
 ---
 
-## 25.10 下一步
+## 25.10 延伸阅读
+
+1. **Intrinsic 的命名与重载契约** — `llvm/docs/LangRef.md`
+   - 读什么：`## Intrinsic Functions` 开头到 `### Variable Argument Handling Intrinsics` 之前，重点看 `llvm.` 前缀、重载类型后缀，以及“target intrinsic 不要只靠整数/浮点重载区分”的那段建议。
+   - 学到什么：`llvm.loongarch.lsx.vadd.w` 为什么没有 `.v4i32` 后缀——它的类型在 intrinsic 定义里已经固定；同时理解给 LoongArch 新增 intrinsic 时，什么时候该拆成两个名字而不是依赖重载。本章 25.4 只讲了名字拼接，没讲 IR 层的命名契约。
+   - 前提：读过 25.4，知道 builtin 名字如何拼成 intrinsic 名字。
+
+2. **Intrinsic 与 DAGISel 两个 TableGen backend** — `llvm/docs/TableGen/BackEnds.md`
+   - 读什么：`### Intrinsic`、`### DAGISel` 两节，以及 `## LLVM BackEnds` 开头的 backend 列表。
+   - 学到什么：`llvm-tblgen -gen-intrinsic-enums`/`-gen-intrinsic-impl` 与 `-gen-dag-isel` 各自生成什么；本章说的“自动映射”背后有两层生成物——intrinsic 查表与 SelectionDAG pattern matcher。读完能解释为什么改一个 `.td` 要重新跑 TableGen 并重编。
+   - 前提：知道 TableGen 是编译期代码生成器；读过 Ch 04 的指令定义。
+
+3. **LSX intrinsic pattern 的真实写法** — `llvm/lib/Target/LoongArch/LoongArchLSXInstrInfo.td`
+   - 读什么：`/// Intrinsic pattern` 注释开始的整段（约 3117 行起），重点看 `deriveLSXIntrinsic` 里的 `!cast<Intrinsic>`/`!tolower`，以及随后按 `v16i8`/`v8i16`/`v4i32`/`v2i64` 展开的 `Pat<...>`。
+   - 学到什么：builtin 自动映射到 intrinsic 之后，intrinsic 还要靠这些 pattern 落到具体指令；`Pat` 里的向量类型正好对应 25.2 的 `V4i` 等类型串。补上“builtin 名字 → intrinsic 名字 → 机器指令”链条中后两环。
+   - 前提：能读 `Pat`/`Intrinsic`/`foreach` 这类 TableGen 写法；读过 25.2–25.4。
+
+4. **不是所有 intrinsic 都只靠 pattern** — `llvm/lib/Target/LoongArch/LoongArchISelLowering.cpp`
+   - 读什么：`LowerOperation` 里 `ISD::INTRINSIC_WO_CHAIN`/`INTRINSIC_W_CHAIN`/`INTRINSIC_VOID` 三个分支（约 605–610 行），以及 `lowerINTRINSIC_WO_CHAIN`（约 4874 行）、`lowerINTRINSIC_W_CHAIN`（约 5162 行）、`lowerINTRINSIC_VOID`（约 5283 行）的入口；再找 `setTargetDAGCombine(ISD::INTRINSIC_WO_CHAIN)` 的注册位置。
+   - 学到什么：有些 LoongArch intrinsic 需要在 SelectionDAG 层做合法化、拆分或合并，不能只靠 `.td` pattern。本章强调“没有 `EmitLoongArchBuiltinExpr`”，但后端仍可能自定义 intrinsic lowering；读这些入口能看清边界。
+   - 前提：读过 Ch 13–14 的 legalization/DAG combine；知道 `ISD::INTRINSIC_*` 三类节点的区别。
+
+## 25.11 下一步
 
 编译器和 builtin 都看完了，下一章看“程序真正跑起来还需要什么”：`compiler-rt` 的 builtins、crt 对象与 runtimes。重点是一个容易被忽略的事实——本课这份构建**没有**编译 `libclang_rt`。

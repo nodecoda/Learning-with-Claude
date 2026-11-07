@@ -484,7 +484,29 @@ LLVM 后端永远输出 canonical 顺序。**这意味着 #239812 不是“LLVM 
 
 ---
 
-## 0.13 下一步
+## 0.13 延伸阅读
+
+1. **修复自带的回归测试：hint-first 对象怎么造** — `lld/test/ELF/loongarch-tls-le-relax-order.s`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：文件头的 3 条 `RUN` 行，`.rela.text.hint_first` 段中 offset 8 的 `R_LARCH_RELAX` 与 `R_LARCH_TLS_LE_LO12_R` 顺序，以及 `CANONICAL`/`HINT-FIRST` 两组 FileCheck。
+   - 学到什么：把 0.4 的“同 offset 顺序”从叙述变成可运行对象；看清为什么这里用 `yaml2obj` 精确控制重定位顺序，而不是用 GNU as。
+   - 前提：知道 ELF `.rela` 的 offset/type/symbol 三元组，以及 0.4 的 TLS LE 三指令序列。
+
+2. **lit 为什么把没编 target 的测试标成 UNSUPPORTED** — `llvm/docs/TestingGuide.md`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：`### Platform-Specific Tests` 与 `### Constraining test execution` 两节，重点看 `lit.local.cfg` 的 `config.unsupported`、`REQUIRES`、`UNSUPPORTED`、`XFAIL`。
+   - 学到什么：补 0.5 的假绿机制：没有 LoongArch target 时测试不是 `FAIL` 而是 `UNSUPPORTED`；也知道新增 LoongArch 测试该放哪个目录、用什么 feature 限制。
+   - 前提：跑过一次 `llvm-lit`，知道 `lit` 的 feature 与 `lit.local.cfg` 概念（可先读同文件 `## Quick start`）。
+
+3. **用 llvm-readobj 稳定读取重定位顺序** — `llvm/docs/CommandGuide/llvm-readobj.md`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：`## ELF SPECIFIC OPTIONS` 里的 `--relocations, --relocs, -r`，以及 `--elf-output-style` 的 `LLVM`/`GNU`/`JSON` 三种输出。
+   - 学到什么：把 0.4/0.5 的重定位对照做得更稳：知道如何用统一格式核对 canonical 与 hint-first 的 offset、type、symbol，避免被排版差异误导。
+   - 前提：知道 `.rela` 每条记录包含 offset、type、symbol、addend。
+
+4. **bug fix 提交前要过哪些上游政策** — `llvm/docs/DeveloperPolicy.md`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：`### Making and Submitting a Patch`、`### Code Reviews`、`### Test Cases` 三节，特别是“base your patches on a recent commit from `main`”“include a test”“test cases should be targeted”。
+   - 学到什么：把 0.9 的 review checklist 和 0.13 的 PR 步骤接到官方政策上：为什么 ahead 1/behind 19 必须先 rebase，为什么 24 行修复仍要带 95 行测试。
+   - 前提：读过本章 0.4 与 0.9，知道这条修复改的是 lld 的 relaxation 判定。
+
+## 0.14 下一步
 
 - 想知道这棵树里每个文件在整条编译链的哪一站：读 [Ch 01 后端全景](./01-backend-map.md)。
 - 想直接看这个修复涉及的 ISA/ABI 背景：跳到 [Ch 02](./02-isa-subtarget-abi.md) 的 TLS/代码模型小节和 [Ch 12](./12-lld-relocations-and-relaxation.md)。

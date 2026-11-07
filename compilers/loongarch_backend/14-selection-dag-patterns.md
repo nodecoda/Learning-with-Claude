@@ -216,6 +216,28 @@ class PatGprGpr_32<SDPatternOperator OpNode, LAInst Inst>
 
 ---
 
-## 14.10 下一步
+## 14.10 延伸阅读
+
+1. **DAGISel backend 生成什么** — `llvm/docs/TableGen/BackEnds.md`
+   - 读什么：`### DAGISel`（161 行起）的 Purpose/Output/Usage 三段，注意它明确说生成物 include 在 `SelectionDAGISel` 的实现里。
+   - 学到什么：本章 14.1 说“matcher 是 TableGen 生成的”；这一节补上生成器的边界——它只负责 pattern 匹配，不负责 `Select()` 里的手写分支。
+   - 前提：读过本章 14.1 和 14.5。
+
+2. **`ComplexPattern` 与 `PatGprGpr` 的定义** — `llvm/lib/Target/LoongArch/LoongArchInstrInfo.td`
+   - 读什么：625–628 行的 `BaseAddr`/`AddrConstant`/`NonFIBaseAddr`/`AddrRegImm` 四个 `ComplexPattern`，1208 行的 `LDPTR_D`，1343–1345 行的 `PatGprGpr`/`PatGprGpr_32`，以及 1370–1374 行的 `shiftMask`/`sexti32`/`zexti32`。
+   - 学到什么：本章 14.2/14.6 只贴了类定义；直接看这些 `def` 能知道每个 `ComplexPattern` 拆出几个结果、绑定哪个 C++ 函数，以及 LA32 的 `sext_inreg` 包装长什么样。
+   - 前提：读过本章 14.2 和 14.6。
+
+3. **`ldptr` 的边界测试** — `llvm/test/CodeGen/LoongArch/ldptr.ll`
+   - 读什么：`ldptr_w_too_small_offset`、`ldptr_w`、`ldptr_w_too_big_offset` 以及对应的 `ldptr.d` 函数，重点看 2044 与 2048 的切换、32768 字节偏移的回退序列。
+   - 学到什么：本章 14.3 用 100/5000/40000 三个点展示三种寻址；这份测试把 `ldptr` 的“太小不用、太大不用”边界逐条固定下来，适合验证你对 `simm14_lsl2` 的理解。
+   - 前提：读过本章 14.3 的三种寻址表。
+
+4. **ComplexPattern 迁移到 GlobalISel** — `compilers/globalisel_instruction_select/README.md`（相对 `/home/ubuntu/Learning-with-Claude`）
+   - 读什么：Part 2 的 Ch 11《ComplexPattern 迁移》。
+   - 学到什么：本章的 `ComplexPattern` 是 SelectionDAG 的 C++ 匹配函数；这门课讲同一类寻址模式在 GlobalISel 里怎么重新表达，能帮助判断一个 pattern 该留在 SelectionDAG 还是迁移。
+   - 前提：读过本章 14.2 的 `ComplexPattern` 段。
+
+## 14.11 下一步
 
 下一章看“pattern 表达不了”的部分：`LowerOperation` 的自定义 lowering、`LoongArchISD::*` 节点、以及 intrinsic 的 lowering 路径。

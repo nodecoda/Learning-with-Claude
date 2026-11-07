@@ -164,7 +164,8 @@ ls -l $T/bin/ld.lld                              # -> lld
 
 ## 当前进度
 
-- 2026-11-08：**全课完成**。Ch 00–30 正文、练习 A–E、Final Project 全部写完，共 37 篇。
+- 2026-11-08：**全课完成**。README + Ch 00–30 + 练习 A–E + Final Project，共 38 篇、11,595 行。
+- 2026-11-08 补强：31 章全部加了「延伸阅读」（每章 4 条，共 124 条，逐条说明读什么/学到什么/前提，路径均已校验存在）；5 个练习全部加了 `<details>` 可折叠参考解答（共 24 个），并修正了 Practice A 的玩具 opcode 与 Ch 04/D 的过时数值。
 - Part 0（Ch 00–03）：树审计、后端全景、ISA/Subtarget/ABI、流水线与 MIR。
 - Part 1（Ch 04–08 + 练习 A）：TableGen、寄存器/CC、MC 编码、asm 往返、常量物化。
 - Part 2（Ch 09–12 + 练习 B）：CC lowering、栈帧、代码模型/TLS、lld relocation 与 relaxation。

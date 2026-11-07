@@ -350,6 +350,28 @@ add.d $a0, $a1, $a2   # encoding: [0xa4,0x98,0x10,0x00]
 
 ---
 
-## 1.11 下一步
+## 1.11 延伸阅读
+
+1. **官方七阶段与 target description 类** — `llvm/docs/CodeGenerator.md`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：`### The high-level design of the code generator` 的七阶段编号列表，以及 `## Target description classes` 下 `TargetMachine`、`DataLayout`、`TargetLowering`、`TargetRegisterInfo`、`TargetInstrInfo`、`TargetFrameLowering`、`TargetSubtarget`、`TargetJITInfo` 八个小节（JIT 可跳过）。
+   - 学到什么：把 1.2 的十二个站位映射回 LLVM 的官方七阶段，分清哪些是 target-independent 框架、哪些是 LoongArch 自己插入的 pass。
+   - 前提：能读懂 `llc -debug-pass=Structure` 的一行输出（本章 1.9 有命令）。
+
+2. **从零写后端的标准顺序** — `llvm/docs/WritingAnLLVMBackend.md`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：`### Basic Steps` 的七步清单，再读 `## Register Set and Register Classes`、`## Instruction Set`、`## Instruction Selector` 三章的导言。
+   - 学到什么：补 1.4 文件地图背后的依赖顺序：为什么先有 `TargetMachine`，再补寄存器/指令描述，最后才是 ISel 与 AsmPrinter。
+   - 前提：知道 `TargetMachine`、`RegisterInfo.td`、`InstrInfo.td` 各自负责什么（本章 1.4）。
+
+3. **LoongArch 没有 GlobalISel 意味着多少工作量** — `llvm/docs/GlobalISel/Porting.md`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：开头列出的四个必须实现的类（`CallLowering`、`RegisterBankInfo`、`LegalizerInfo`、`InstructionSelector`）和 `TargetPassConfig` 那一段。
+   - 学到什么：把 1.6 的“只有 SelectionDAG”从结论变成可估算的迁移面：不是加一个 pass，而是补四套规则并接进 pipeline。
+   - 前提：知道 SelectionDAG 的 legalize 与 ISel 大致流程（本章 1.2 的站位 2–5）。
+
+4. **pass 到底在哪一行注册** — `llvm/lib/Target/LoongArch/LoongArchTargetMachine.cpp`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：`LoongArchPassConfig` 的 `addIRPasses()`、`addInstSelector()`、`addMachineSSAOptimization()`、`addPreRegAlloc()`、`addMachineLateOptimization()`、`addPreEmitPass()`、`addPreEmitPass2()` 七个函数体。
+   - 学到什么：把 1.5 的真实链路和 1.6 的 Pre-RA/Post-RA 分工落到具体注册点，读 Ch 03 时不会只背 pass 名。
+   - 前提：知道 `TargetPassConfig` 的 `add*` 钩子会在固定阶段被调用（可先读 `CodeGenerator.md` 的 high-level design）。
+
+## 1.12 下一步
 
 下一章把地图上的“类型/Feature/ABI”这一层拆开：LA32/LA64 到底差在哪、`-mabi=lp64d` 如何变成 `e_flags`、寄存器名和调用约定怎么对应。

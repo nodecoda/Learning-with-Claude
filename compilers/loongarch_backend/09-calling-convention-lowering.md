@@ -270,6 +270,28 @@ callee (LowerFormalArguments)
 
 ---
 
-## 9.12 下一步
+## 9.12 延伸阅读
+
+1. **通用调用约定的 `.td` 写法** — `llvm/docs/WritingAnLLVMBackend.md`
+   - 读什么：`### Calling Conventions`（1490 行起）里的 `CCIfType`/`CCAssignToReg` 例子，以及 `RetCC_Sparc32` 的定义。
+   - 学到什么：本章 9.1 的核心反直觉点是“LoongArch 的规则不在 `.td`”；这一节给出“常规后端长什么样”的基线，读完才能判断 LoongArch 为什么把 `CC_LoongArch` 写成 C++。
+   - 前提：知道 `CallingConv.td` 里 `CallingConv<[...]>` 的基本语法。
+
+2. **`CC_LoongArch()` 的分配状态机** — `llvm/lib/Target/LoongArch/LoongArchISelLowering.cpp`
+   - 读什么：`CC_LoongArch()`（9822 行起）、`CC_LoongArchAssign2GRLen()`（9786 行起），以及 `analyzeInputArgs`/`analyzeOutputArgs` 两个调用点（10004、10027 行附近）。
+   - 学到什么：本章 9.5 说“FPR 用尽回退 GPR”，源码里还包含 `PendingLocs`、2×GRLen 对齐和 `preserve_none` 池；这些分支只有直接读函数才能串起来。
+   - 前提：读过本章 9.2 的寄存器池和 9.8 的三个入口。
+
+3. **varargs 保存区的 lit 证据** — `llvm/test/CodeGen/LoongArch/vararg.ll`
+   - 读什么：`va1` 的 `LA64-FPELIM` 与 `LA64-WITHFP` 两组 `CHECK`，重点看 `addi.d $sp, $sp, -80` 和 `st.d $a1`–`$a7` 的保存顺序。
+   - 学到什么：本章 9.6 只给了一个 `llc` 片段；测试里同时跑了 `--frame-pointer=all`，可以对照看 `$fp` 是否改变保存区布局。
+   - 前提：读过本章 9.6，知道 80 字节帧的来历。
+
+4. **RISC-V 后端的同题对照** — `compilers/riscv_backend/README.md`（相对 `/home/ubuntu/Learning-with-Claude`）
+   - 读什么：Part 3 的 Ch 12《调用约定》，覆盖 `ilp32`/`lp64`/`lp64d`、参数寄存器、`sret`/`byval`/varargs。
+   - 学到什么：本章只讲 LoongArch 的 C++ 实现；对照 RISC-V 的课程可以看到另一套 ABI（同样有浮点 ABI 变体和 varargs）如何组织同一组问题，便于判断哪些是 ABI 共性、哪些是 LoongArch 特有。
+   - 前提：读过本章 9.3–9.6。
+
+## 9.13 下一步
 
 下一章看栈帧：`$fp` 什么时候出现、callee-saved 寄存器怎么存、`adjustReg` 为什么对大栈偏移特殊处理，以及 `shrink-wrapping` 在 LoongArch 上是否启用。

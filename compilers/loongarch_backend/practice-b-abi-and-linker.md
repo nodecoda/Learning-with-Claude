@@ -207,6 +207,159 @@ llvm-lit -sv lld/test/ELF/loongarch-tls-le-relax-order.s
 
 ---
 
-## B.8 下一步
+## B.8 参考解答
+
+> 复核环境：2026-11-08，`llc`/`llvm-readobj`/`clang`/`ld.lld` 均来自 `/home/ubuntu/llvm/builds/ct-instr-trunk/bin`。
+
+<details>
+<summary>B.1：六种签名的参数与返回值分别落在哪？</summary>
+
+```bash
+$T/bin/llc -mtriple=loongarch64-unknown-linux-gnu -O2 sig.ll -o -
+```
+
+实测（只摘函数体）：
+
+```text
+s1:
+	add.d	$a0, $a0, $a1
+	ret
+s2:
+	fadd.d	$fa0, $fa0, $fa1
+	ret
+s3:
+	move	$a1, $a0
+	ret
+s4:
+	ret
+s6:
+	ret
+```
+
+| 签名 | 实参 | 返回 | 依据 |
+|---|---|---|---|
+| `i64(i64,i64)` | `$a0,$a1` | `$a0` | 整数参数按 GPR 顺序 |
+| `double(double,double)` | `$fa0,$fa1` | `$fa0` | `lp64d` 的 FPR 参数 |
+| `{i64,i64}(i64)` | `$a0` | `$a0,$a1` | 两个 GPR 的 small aggregate |
+| `sret({i64,i64,i64})` | 隐藏指针 `$a0` | — | 返回空间由调用者提供 |
+| `i128(i128)` | `$a0,$a1` | `$a0,$a1` | 2×GRLen 拆分 |
+
+`s6` 为空不是优化掉了：`i128` 参数本来就在 `$a0/$a1`，返回值也走同一对寄存器，函数体不需要任何指令。审计时不要只看“有没有指令”，要看 ABI 位置。
+
+</details>
+
+<details>
+<summary>B.2：TLS LE/IE 的重定位长什么样？`R_LARCH_RELAX` 什么时候出现？</summary>
+
+```bash
+$T/bin/llc -mtriple=loongarch64-unknown-linux-gnu -mattr=+relax -filetype=obj tls.ll -o tls.o
+$T/bin/llvm-readobj -r tls.o
+```
+
+实测（只摘 `.rela.text`）：
+
+```text
+  Section (3) .rela.text {
+    0x0  R_LARCH_TLS_LE_HI20_R t 0x0
+    0x0  R_LARCH_RELAX - 0x0
+    0x4  R_LARCH_TLS_LE_ADD_R t 0x0
+    0x4  R_LARCH_RELAX - 0x0
+    0x8  R_LARCH_TLS_LE_LO12_R t 0x0
+    0x8  R_LARCH_RELAX - 0x0
+    0x10 R_LARCH_TLS_IE_PC_HI20 t2 0x0
+    0x10 R_LARCH_RELAX - 0x0
+    0x14 R_LARCH_TLS_IE_PC_LO12 t2 0x0
+    0x14 R_LARCH_RELAX - 0x0
+  }
+```
+
+同一份 `llvm-readobj` 输出里还会看到 `.rela.eh_frame` 的 `R_LARCH_32_PCREL` / `ADD32` / `SUB32`。它们不是 TLS 重定位，别混进审计表。
+
+关键结论：
+
+1. LE 是三条（`HI20_R`/`ADD_R`/`LO12_R`），每对后面跟一条同 offset 的 `R_LARCH_RELAX`；
+2. IE 是两条（`PC_HI20`/`PC_LO12`），也带 `R_LARCH_RELAX`，但类型名没有 `_R`——IE→LE 的放松走另一套逻辑；
+3. 不带 `-mattr=+relax` 时，`R_LARCH_RELAX` 数量为 **0**（实测 `grep -c` 输出 0）。这是“测试通过但 relaxation 没被覆盖”的最常见原因。
+
+</details>
+
+<details>
+<summary>B.3：链接后三条 TLS 指令怎么变成一条？</summary>
+
+用 B.3 的裸 `_start` 汇编（不 dereference TLS，只算地址）：
+
+```bash
+$T/bin/clang --target=loongarch64-unknown-linux-gnu -c pB.s -o pB.o
+$T/bin/ld.lld -o pB pB.o
+$T/bin/llvm-objdump -d pB | sed -n '/<_start>/,+5p'
+qemu-loongarch64 ./pB; echo $?
+```
+
+实测：
+
+```text
+0000000000020158 <_start>:
+   20158: 44 00 c0 02  	addi.d	$a0, $tp, 0
+   2015c: 04 00 80 03  	ori	$a0, $zero, 0x0
+   20160: 0b 78 81 03  	ori	$a7, $zero, 0x5e
+   20164: 00 00 2b 00  	syscall	0x0
+exit=0
+```
+
+三条 `lu12i.w + add.d + addi.d` 被收缩成一条 `addi.d $a0,$tp,0`。对照 `ld.lld --no-relax`（或编译时 `-mno-relax`）：
+
+```text
+   20158: 04 00 00 14  	lu12i.w	$a0, 0x0
+   2015c: 84 88 10 00  	add.d	$a0, $a0, $tp
+   20160: 84 00 c0 02  	addi.d	$a0, $a0, 0x0
+```
+
+同一个 `.s`，只改链接/汇编选项，差两条指令。审计时必须先确认 relaxation 开着。
+
+</details>
+
+<details>
+<summary>B.4：为什么 hint-first 只能用 `yaml2obj` 构造？</summary>
+
+GNU as 和 clang 的汇编器只会产生 canonical 顺序（`HI20_R` → `ADD_R` → `LO12_R`，每条后面紧跟 `RELAX`）。要把“`RELAX` 在前、生产者重定位在后”的坏顺序喂给 lld，必须在目标文件层面改写重定位表；汇编源文件做不到。
+
+本树的回归测试就是 `yaml2obj` 构造的：
+
+```bash
+cd /home/ubuntu/llvm/trees/ct-instr-trunk
+$T/bin/llvm-lit -s lld/test/ELF/loongarch-tls-le-relax-order.s
+```
+
+实测：
+
+```text
+Total Discovered Tests: 1
+  Passed: 1 (100.00%)
+```
+
+读这个测试时重点看两件事：`hint_first` section 里 `offset 8` 的两条重定位顺序，以及 `CHECK` 期望的最终指令。把两条对调后测试应仍然通过——这正是修复 `relaxTlsLe()` 要保证的不变量。
+
+</details>
+
+<details>
+<summary>B.5：拿到一个 `.o`，审计顺序是什么？</summary>
+
+按这个顺序问，每步都有工具：
+
+1. **ABI**：`llvm-readobj --file-headers tls.o | grep -i flags`，看 `EF_LOONGARCH_ABI_*`；
+2. **浮点参数**：看汇编里是 `$fa*` 还是 `$a*`；`lp64s` 走 GPR，`lp64d` 走 FPR，varargs 一律 GPR；
+3. **返回值**：超过两个 GPR 就必须有 `sret` 隐藏参数；
+4. **TLS 模型**：`llvm-readobj -r` 里的 `TLS_LE_*` / `TLS_IE_*` / `TLS_GD_*` / `TLS_DESC_*`；
+5. **relax 标记**：有没有 `R_LARCH_RELAX`；没有就先回去查编译选项；
+6. **同 offset 顺序**：`llvm-readobj -r` 的打印顺序就是重定位表顺序，重点看 `RELAX` 与生产者的相对位置；
+7. **最终结果**：`llvm-objdump -d` 对比 `.o` 与链接后 ELF 的指令条数。
+
+这七步能把“ABI 假设 → 重定位 → 链接结果”连成一条可复现的证据链，而不是靠读文档猜。
+
+</details>
+
+---
+
+## B.9 下一步
 
 Part 3 进入 SelectionDAG：先看合法化（Ch 13），再看选指（Ch 14）、自定义 lowering（Ch 15）、DAG combine（Ch 16），最后是 LSX/LASX 向量 lowering（Ch 17）。

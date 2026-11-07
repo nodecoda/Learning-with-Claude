@@ -246,7 +246,130 @@ LA32 需要 `add.w` + `sltu` 进位链；LA64 一条 `add.d`。这与 Ch 13 的 
 
 ---
 
-## E.9 收尾
+## E.9 参考解答
+
+> 复核环境：2026-11-08，交叉 sysroot `/opt/loongarch64-cross/target`，`qemu-loongarch64 8.2.2`。所有命令都重跑过。
+
+<details>
+<summary>E.1：最小可执行文件需要哪几个 flag？</summary>
+
+```bash
+$T/bin/clang --target=loongarch64-unknown-linux-gnu \
+  --sysroot=$SYS -B$G -L$G -fuse-ld=lld hello.c -o hello_lld
+qemu-loongarch64 -L $SYS ./hello_lld; echo "exit=$?"
+```
+
+实测：
+
+```text
+hello loongarch
+exit=0
+```
+
+| flag | 作用 | 缺了会怎样 |
+|---|---|---|
+| `--target=loongarch64-unknown-linux-gnu` | 选目标 | 生成 x86 代码 |
+| `--sysroot=$SYS` | 找 `Scrt1.o`、`libc.so` | `cannot find Scrt1.o` |
+| `-B$G` | 找 `crtbeginS.o`、`libgcc.a` | `cannot find crtbeginS.o` |
+| `-L$G` | 给 `-lgcc` 用 | `cannot find -lgcc` |
+| `-fuse-ld=lld` | 用本树 `ld.lld` | 走系统默认 linker |
+
+本树构建没有 `libclang_rt`（Ch 26），所以 crt 和 `libgcc` 必须借交叉 GCC 的 sysroot。`qemu-loongarch64 -L $SYS` 里的 `-L` 是给动态 loader 找库，不是链接器的 `-L`。
+
+</details>
+
+<details>
+<summary>E.3：TLS LE 的 3 对重定位怎么变成 1 条指令？</summary>
+
+编译到 `.o`：
+
+```bash
+$T/bin/clang --target=loongarch64-unknown-linux-gnu -O2 \
+  -fPIC -ftls-model=local-exec -c tls.c -o tls_le.o
+$T/bin/llvm-readobj -r tls_le.o | grep -E 'TLS_LE|RELAX'
+```
+
+实测：
+
+```text
+0x0 R_LARCH_TLS_LE_HI20_R tv 0x0
+0x0 R_LARCH_RELAX - 0x0
+0x4 R_LARCH_TLS_LE_ADD_R tv 0x0
+0x4 R_LARCH_RELAX - 0x0
+0x8 R_LARCH_TLS_LE_LO12_R tv 0x0
+0x8 R_LARCH_RELAX - 0x0
+```
+
+链接后：
+
+```bash
+$T/bin/llvm-objdump -d --no-show-raw-insn tls2 | sed -n '/<addr>:/,+3p'
+qemu-loongarch64 -L $SYS ./tls2; echo "exit=$?"
+```
+
+实测：
+
+```text
+0000000000000820 <addr>:
+     820:      	addi.d	$a0, $tp, 0x0
+     824:      	ret
+     828:      	nop
+7
+exit=0
+```
+
+三条 TLS 指令收缩成一条 `addi.d $a0,$tp,0`，程序读到 `7`。这条链就是 #239812 的现场：如果 `RELAX` 与生产者的顺序坏了，lld 只删掉部分指令，`$a0` 会是未初始化值。
+
+</details>
+
+<details>
+<summary>E.4：LSX 向量程序真的能跑吗？</summary>
+
+```bash
+$T/bin/clang --target=loongarch64-unknown-linux-gnu \
+  --sysroot=$SYS -B$G -L$G -march=la464 -O2 vec.c -o vec
+qemu-loongarch64 -L $SYS ./vec; echo "exit=$?"
+```
+
+实测：
+
+```text
+11 22 33 44
+exit=0
+```
+
+`-march=la464` 带 `+lsx +lasx`，`addv` 里会出现 `vinsgr2vr.d` / `vadd.w` / `vpickve2gr.d`。换成 `-march=loongarch64`（无 LSX）后 `vadd.w` 消失，退化成标量 `add.w` 序列——这正好对应 Ch 13 的类型合法化和 Ch 17 的向量 lowering。
+
+</details>
+
+<details>
+<summary>E.5：LA32 与 LA64 的 `long long` 加法差在哪？</summary>
+
+```bash
+$T/bin/clang --target=loongarch32-unknown-linux-gnu -O2 -S i64.c -o - | grep -E 'add\.w|sltu|add\.d'
+$T/bin/clang --target=loongarch64-unknown-linux-gnu -O2 -S i64.c -o - | grep -E 'add\.w|sltu|add\.d'
+```
+
+实测：
+
+```text
+# LA32（前面还有两条 target-abi 警告）
+	add.w	$a1, $a3, $a1
+	add.w	$a0, $a2, $a0
+	sltu	$a2, $a0, $a2
+	add.w	$a1, $a1, $a2
+
+# LA64
+	add.d	$a0, $a1, $a0
+```
+
+LA32 的 GPR 是 32 位，`i64` 被拆成两个 `i32`，加法需要 `add.w` 产生低 32 位、`sltu` 产生进位、再加到高位；LA64 一条 `add.d`。这是 Ch 13 legalization 最直观的例子，也是读 LA32 汇编时最容易看错的地方。
+
+</details>
+
+---
+
+## E.10 收尾
 
 到这里，你已经有一条完整的证据链：
 

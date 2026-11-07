@@ -217,6 +217,28 @@ def loongarch_call : SDNode<"LoongArchISD::CALL", SDT_LoongArchCall,
 
 ---
 
-## 15.10 下一步
+## 15.10 延伸阅读
+
+1. **`immarg` 的规范约束** — `llvm/docs/LangRef.md`
+   - 读什么：`### Parameter Attributes` 里的 `immarg`（1718 行附近），以及 `## Intrinsic Functions`（14637 行起）关于 intrinsic 必须是外部函数、可重载的规则。
+   - 学到什么：本章 15.5 说“立即数检查在 lowering”；这一节解释 `immarg` 在 IR 层的语义，能说明为什么非编译期常量会在 verifier 或 lowering 阶段被拒。
+   - 前提：读过本章 15.2 和 15.5。
+
+2. **intrinsic 与指令名的字符串绑定** — `llvm/lib/Target/LoongArch/LoongArchLSXInstrInfo.td`
+   - 读什么：3119–3143 行的 `deriveLSXIntrinsic` 类与第一组 `foreach Inst = [...]`，注意 `!tolower("int_loongarch_lsx_"#Inst)` 和 `!cast<LAInst>(Inst)`。
+   - 学到什么：本章 15.3 用简化版展示了“名字对上就能匹配”；源码里还有按元素宽度分组的多个 `foreach`，能看出命名约定失效时会在哪一步报错。
+   - 前提：读过本章 15.3。
+
+3. **立即数越界的诊断** — `llvm/test/CodeGen/LoongArch/intrinsic-error.ll`
+   - 读什么：文件开头的 `RUN: not llc`，以及 `dbar_imm_out_of_hi_range` 等函数和对应的 `argument out of range` `CHECK`。
+   - 学到什么：本章 15.5 只说了报错文本；这份测试列出 `dbar`/`ibar`/`break`/`csrrd` 等多个 intrinsic 的边界值，能帮你判断改 `checkIntrinsicImmArg` 时该补哪些用例。
+   - 前提：读过本章 15.5。
+
+4. **GlobalISel 的 target intrinsic 路径** — `llvm/docs/GlobalISel/IRTranslator.md`
+   - 读什么：`## Target Intrinsics`（34 行起）。
+   - 学到什么：这一节明确说 target intrinsic 的可定制 lowering 还没有实现；读它能避免误以为 GlobalISel 有与 SelectionDAG `.td` pattern 对等的 intrinsic 机制，也能解释本章为什么把 intrinsic 主要交给 pattern。
+   - 前提：知道本章 15.1 的 `LowerOperation` 分派和 GlobalISel 的四段流水。
+
+## 15.11 下一步
 
 下一章看 DAG combine：`PerformDAGCombine` 如何在选指前把 `(add x, 0)`、`(sext_inreg ...)` 这类节点消掉，以及 `computeKnownBitsForTargetNode` 怎么帮助 combine。

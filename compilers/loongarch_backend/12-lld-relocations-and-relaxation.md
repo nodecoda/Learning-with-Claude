@@ -282,6 +282,28 @@ static bool isPairRelaxable(ArrayRef<Relocation> relocs, size_t i) {
 
 ---
 
-## 12.11 下一步
+## 12.11 延伸阅读
+
+1. **relaxation 主循环与 `relaxable()`** — `lld/ELF/Arch/LoongArch.cpp`
+   - 读什么：`scanSectionImpl()`（497 行）、`stable_sort`（752 行）、`relaxable()`（1105 行）、`isPairRelaxable()`（1109 行）、`relaxTlsLe()`（1263 行）、`relax()`（1283 行起，含 `tlsLeRelaxedAt` 在 1297 行与 1359–1365 行）。
+   - 学到什么：本章 12.2/12.5 贴了核心片段；完整读 `relax()` 能看到 TLS LE 只是众多序列之一，`PCALA_HI20`/`CALL36`/`TLS_IE` 各自也有“标记在后”的位置假设。
+   - 前提：读过本章 12.1–12.5。
+
+2. **hint-first 的最小复现** — `lld/test/ELF/loongarch-tls-le-relax-order.s`
+   - 读什么：文件头 2–5 行的注释、两条 `RUN`、`CANONICAL`/`HINT-FIRST` 的 `CHECK-NEXT`，以及 yaml 里两个 `.rela.text.*` 段的 offset 顺序（76 行起的 `hint_first` 说明）。
+   - 学到什么：本章 12.4 解释了“只有 consumer 是 hint-first”；测试把 canonical 与 hint-first 放在同一个文件里用同一组 `CHECK` 断言等价，这是修这类 bug 最该模仿的测试形态。
+   - 前提：知道 `yaml2obj` 和 `llvm-objdump -d` 的基本用法。
+
+3. **`-r` 输出怎么读** — `llvm/docs/CommandGuide/llvm-readobj.md`
+   - 读什么：`## ELF SPECIFIC OPTIONS` 里的 `--relocations, --relocs, -r`（101 行起），以及紧随其后的 `--section-relocations, --sr`（110 行起）。
+   - 学到什么：本章多处用 `llvm-readobj -r` 观察同 offset 的 `R_LARCH_RELAX`；这一节说明 `-r` 是全局列出重定位，`--section-relocations` 是配合 `--sections` 按节列出，避免在混合输入里看错作用域。
+   - 前提：跑过本章 12.2 的 `llvm-readobj -r`。
+
+4. **链接器 relaxation 的通用模型** — `compilers/elf_linking/README.md`（相对 `/home/ubuntu/Learning-with-Claude`）
+   - 读什么：Part 2 的 Ch 5《Relocation type 總論》、Ch 6《RISC-V 專屬 relocation 與 linker relaxation》与 Ch 7《R_RISCV_ALIGN 與 relaxation 的副作用》。
+   - 学到什么：本章聚焦 LoongArch 的 `R_LARCH_RELAX` 配对；这门课用 RISC-V 的 `R_RISCV_RELAX`/`R_RISCV_ALIGN` 讲同一套“RELAX 标记 + 多轮收缩”机制，便于横向比较哪些是 LoongArch 特有问题。
+   - 前提：读过本章 12.1 的固定点迭代。
+
+## 12.12 下一步
 
 Part 2 结束。**练习 B** 会把 ABI、TLS、链接串起来：用六种函数签名 + 三种 TLS 模型，追到 `.rela.text` 和最终 ELF。之后进入 Part 3（SelectionDAG）。

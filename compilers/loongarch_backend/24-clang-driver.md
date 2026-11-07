@@ -264,6 +264,28 @@ $ clang --target=loongarch64-unknown-linux-gnu -print-multi-directory
 
 ---
 
-## 24.12 下一步
+## 24.12 延伸阅读
+
+1. **Target triple 与环境后缀** — `llvm/docs/LangRef.md`
+   - 读什么：`### Target Triple` 一节，重点看 `ARCHITECTURE-VENDOR-OPERATING_SYSTEM-ENVIRONMENT` 的规范形式。
+   - 学到什么：triple 的第四段 environment 如何承载 ABI 默认值；本章 24.2 的 `gnusf`/`gnuf32`/`gnuf64` 是这一机制在 LoongArch 上的实例，读完能把“只写 `--target=` 就得到 `lp64s`”放回 triple 解析的上下文。
+   - 前提：读过 24.1–24.2，知道 `clang --target=` 与 `-target-abi` 的区别。
+
+2. **Subtarget feature 的生成机制** — `llvm/docs/WritingAnLLVMBackend.md`
+   - 读什么：`## Subtarget Support` 一节，重点是 `SubtargetFeature` 的五个字段、`Proc`/`Processor` 示例，以及 `ParseSubtargetFeatures` 的调用顺序。
+   - 学到什么：`-mcpu=`/`-mattr=` 如何变成 feature 位；本章的默认 `+lsx`、`-mno-relax` 的显式 `-relax`、以及 `-msoft-float` 连带关掉 LSX，都能在这套“feature 声明 + 依赖列表”的机制里找到位置。
+   - 前提：读过 24.3–24.4，知道 `-target-feature` 是 driver 传给 cc1 的参数。
+
+3. **后端 CPU 表与 driver 名单的错位** — `llvm/lib/Target/LoongArch/LoongArch.td`
+   - 读什么：文件末尾 `// LoongArch processors supported.` 之后的 `ProcessorModel` 定义，逐个对照 `generic-la64`、`loongarch64`、`la464`、`la664` 的 feature 列表。
+   - 学到什么：后端侧 CPU→feature 的权威表。`generic-la64` 在后端有定义且带 `FeatureExtLSX`，而 `loongarch64` 只带 `Feature64Bit`/`FeatureUAL`/`FeatureBasicD`、没有 LSX；这正是本章“三份 CPU 名单不一致”中后端那一份，能帮助判断该改 driver、TargetParser 还是 `.td`。
+   - 前提：能读基本的 TableGen `def`/`ProcessorModel` 语法（Ch 04）。
+
+4. **relax 在链接器侧的另一半** — `compilers/elf_linking/README.md`（相对 `/home/ubuntu/Learning-with-Claude`）
+   - 读什么：`compilers/elf_linking/README.md` 的课程地图中，Part 2（Static Linking）的 Ch 6「RISC-V 专属 relocation 与 linker relaxation」、Ch 7「R_RISCV_ALIGN 与 relaxation 的副作用」，以及 Part 5（进阶议题）的练习 B。
+   - 学到什么：本章 24.6 只讲到汇编器在可松弛重定位后追加 `R_LARCH_RELAX`；沿着这两章可以补上链接器侧的两个问题：relaxation 如何被消费、以及对齐与 relaxation 的相互影响。用 RISC-V 对照，能更清楚地看 LoongArch 的同类状态机。
+   - 前提：读过本章 24.6 和 Ch 12 的重定位/relaxation；接受用 RISC-V 做类比。
+
+## 24.13 下一步
 
 driver 只决定“传什么”。下一章看这些开关在编译器内部落到哪：`TargetInfo` 的宏、三个 builtin 数据库，以及 builtin 名字如何自动映射成 `llvm.loongarch.*` intrinsic。

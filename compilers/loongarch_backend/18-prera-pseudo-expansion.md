@@ -154,6 +154,28 @@ Register ScratchReg =
 
 ---
 
-## 18.9 下一步
+## 18.9 延伸阅读
+
+1. **MIR 单 pass 测试的官方流程** — `llvm/docs/MIRLangRef.md`
+   - 读什么：`Testing Individual Code Generation Passes` 小节：用 `-stop-after`/`-stop-before` 生成输入、用 `-run-pass` 只跑一个 pass、用 `-simplify-mir` 精简，以及同一 pass 多次运行时 `dead-mi-elimination,1` 的 run index 写法
+   - 学到什么：本章 18.2/18.5 用 `-stop-before`/`-stop-after` 观察三层展开；这份手册补上“怎样把观察固化成 MIR 回归测试”，以及哪些字段（`liveins`、`successors` 概率、IR 引用）可以删。这样你不必每次靠整段 `llc` 输出判断某一层的行为。
+   - 前提：读过本章 18.1 的三层表，知道 `loongarch-prera-expand-pseudo`、`loongarch-expand-pseudo` 等 pass 名。
+
+2. **MC 层里谁负责展开 pseudo** — `llvm/docs/CodeGenerator.md`
+   - 读什么：`Code Emission` 小节中讲 `MCInstLower` 的那一段：把 `MachineInstr` 降到 `MCInst`，并展开 code generator 使用的 pseudo ops
+   - 学到什么：本章把第三层笼统称为“MC”；文档具体指出这一步通常落在 `MCInstLower`，之后才交给 `MCStreamer`/`MCCodeEmitter`。补上 `PseudoAddTPRel_D` 为什么能一路活到编码器，以及“MC 层”内部还分 lowering 与 encoding 两段——这决定你该在 `-stop-after` 的哪一步找它。
+   - 前提：知道 `MachineInstr` → `MCInst` 的基本关系。
+
+3. **TableGen 的 PseudoLowering backend** — `llvm/docs/TableGen/BackEnds.md`
+   - 读什么：`PseudoLowering` 小节的 Purpose/Output/Usage 三行
+   - 学到什么：除了手写 `LoongArchExpandPseudoInsts.cpp`，LLVM 还有一条由 TableGen 生成 `emitPseudoExpansionLowering()` 的声明式路线，挂在 AsmPrinter 上而不是独立 pass。补上本章没提的第三种实现方式，也能解释为什么有些目标的分支/调用 pseudo 在 `.td` 里就写好了展开模板。
+   - 前提：知道 TableGen backend 会生成 C++ 片段；读过本章 18.1。
+
+4. **`la.*` 汇编宏展开与重定位标记** — `llvm/test/MC/LoongArch/Macros/macros-la.s`
+   - 读什么：`la.abs`、`la.pcrel`、`la.tls.le`、`la.tls.ie` 各段后面的 `CHECK` 与 `RELOC`/`RELAX` 检查
+   - 学到什么：本章 18.2 从 MIR 看 `PseudoLA_TLS_LE`；这个 MC 测试从汇编文本看同一族宏的展开：`la.pcrel` 是 `pcalau12i` + `addi.d`，`la.tls.le` 是 `lu12i.w` + `ori`，`la.tls.ie` 是 `pcalau12i` + `ld.d`，并给出对应的 `R_LARCH_*` 重定位；部分段在 `+relax` 下还会多出 `R_LARCH_RELAX`。补上“第三层的宏展开和重定位标记是一起产生的”，也为 Ch 19 的 `MO_RELAX` 埋线。
+   - 前提：会用 `llvm-mc` 与 `llvm-readobj -r`，知道 hi20/lo12 的分工。
+
+## 18.10 下一步
 
 下一章看两个“减少指令数”的机器层优化：`MergeBaseOffset`（合并基址）和 `OptWInstrs`（32 位指令优化）。

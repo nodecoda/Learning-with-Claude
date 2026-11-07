@@ -365,6 +365,28 @@ pcalau12i $a0, %pc_hi20(sym)   # encoding: [0x04,0x00,0x00,0x1a]
 
 ---
 
-## 6.13 下一步
+## 6.13 延伸阅读
+
+1. **ISA 手册里的格式图与编码表** — `https://loongson.github.io/LoongArch-Documentation/LoongArch-Vol1-EN.html`（外部链接）
+   - 读什么：`1.2. Instruction formats` 的 2R/3R/2RI12 等格式图，以及 `2.2.1.1. add.w/d, sub.w/d`、`2.2.1.4. lu12i.w, lu32i.d, lu52i.d` 的编码表。
+   - 学到什么：核对 6.3 手算的 `rd/rj/rk` 位序与 `0x00108000` opcode；理解 `lu12i.w` 的 20 位立即数为什么要配合 `addi.d` 的 12 位。
+   - 前提：知道 LoongArch 基础指令固定 4 字节、小端（本章 6.1/6.3）。
+
+2. **llvm-mc 的编码与 fixup 输出怎么读** — `llvm/docs/CommandGuide/llvm-mc.md`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：`### End-user Options` 里的 `--show-encoding`、`--filetype=[asm,null,obj]`、`--triple=<string>`、`--mattr`，以及 `--assemble` 的说明。
+   - 学到什么：补 6.3/6.9 的实验方法：`-show-encoding` 打印字节序列与 fixup 描述，`-filetype=obj` 才能让 `llvm-readobj -r` 看到 `.rela`。
+   - 前提：跑过本章 6.3 的 `llvm-mc -show-encoding`。
+
+3. **fixup 与 relocation 的测试语料** — `llvm/test/MC/LoongArch/Relocations/fixups.s`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：三条 RUN 行（`--show-encoding`、`--filetype=obj | llvm-objdump -d`、`--filetype=obj | llvm-readobj -r`），以及 `%abs_hi20`/`%abs_lo12`/`%b16`/`%b21` 与普通 `b`/`bl` 的 b26 各自的 `CHECK-FIXUP`/`CHECK-INSTR`/`CHECK-REL`。
+   - 学到什么：把 6.4.1 的 fixup 表变成可对照输出；理解“汇编期能解析的 fixup 不产生 `R_LARCH_*`”，以及分支 fixup 的 4 字节对齐与范围检查。
+   - 前提：知道 `%abs_hi20` 等 specifier 的语义（本章 6.4）。
+
+4. **链接器怎么消费这些重定位** — `lld/ELF/Arch/LoongArch.cpp`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：`relaxable()`（约 1105 行）、`relaxTlsLe()`（约 1263 行），以及 `relax()` 里 `R_LARCH_TLS_LE_HI20_R`/`ADD_R`/`LO12_R` 的 case（约 1290–1385 行）。
+   - 学到什么：补本章停在 `.rela.text` 之后的半程：`R_LARCH_*` 如何被 lld 判定为可 relax 的三指令序列，以及 `tlsLeRelaxedAt` 如何修 Ch 00 的 hint-first bug。
+   - 前提：读过本章 6.8 与 Ch 00 的 0.4；知道 TLS LE 三指令序列。
+
+## 6.14 下一步
 
 下一章看 MC 层的另外三个入口：`AsmParser`（文本 → `MCInst`）、`Disassembler`（字节 → `MCInst`）和 `InstPrinter`（`MCInst` → 文本），并用 `llvm-mc -disassemble` 做往返。

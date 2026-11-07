@@ -210,6 +210,28 @@ xv:
 
 ---
 
-## 17.10 下一步
+## 17.10 延伸阅读
+
+1. **合法向量类型必须覆盖的 shuffle 形态** — `llvm/docs/CodeGenerator.md`
+   - 读什么：`SelectionDAG Legalize Phase` 小节中 "If a target has legal vector types..." 开头的四条列表：vector select、insert subvector、extract subvector、splat
+   - 学到什么：官方把“有合法向量类型的目标应高效处理哪些 shufflevector 形态”列成最低要求，并说明 splat 可能映射到 `shuffle_vector`/`concat_vectors`/`insert_subvector`/`extract_subvector` 多个节点。这补上本章 17.4 只列特化函数名的缺口：哪些 mask 模式是必须覆盖的，哪些只是 LoongArch 额外优化。
+   - 前提：知道 `shufflevector` 与 SelectionDAG 的 `VECTOR_SHUFFLE`/`BUILD_VECTOR` 对应关系。
+
+2. **byte-rotate mask 目前落到哪几条指令** — `llvm/test/CodeGen/LoongArch/lsx/vec-shuffle-byte-rotate.ll`
+   - 读什么：文件头的两条 `RUN`（`+lsx`，LA32/LA64 各一）与 `byte_rotate_v16i8_*`、`byte_rotate_v4i32_*`、`byte_rotate_v2i64_*` 的 `CHECK` 序列
+   - 学到什么：本章 17.4 只提 `lowerVECTOR_SHUFFLEAsByteRotate` 这个名字；测试显示这类 mask 目前被 lower 成 `vbsrl.v` + `vbsll.v` + `vor.v`，文件头 TODO 还写着可以进一步合成。读完能判断“识别成特化”与“生成一条指令”之间还有多大空间，也能学到多宽度、LA32/LA64 双配置的检查写法。
+   - 前提：读过本章 17.4，知道 `vshuf.w` 的第三操作数是 mask 寄存器。
+
+3. **LSX 指令、pattern 与 LASX 镜像** — `llvm/lib/Target/LoongArch/LoongArchLSXInstrInfo.td`
+   - 读什么：`VSHUF_W`（`:1842`）、`VHADDW_*`（`:558` 起）、`VLDI`（`:1015`）、`PseudoVREPLI_*`（`:1908` 起）的 `def`，以及文件里把这些 opcode 接到 intrinsic 的 `Pat`；再对照 `llvm/lib/Target/LoongArch/LoongArchLASXInstrInfo.td` 的 `XVSHUF_W`、`XVHADDW_*`、`XVLDI`
+   - 学到什么：本章 17.6 说 LASX 是“同一套逻辑加 `x` 前缀”；在 `.td` 里能看到镜像具体落在哪：同名的 pattern 形状、`LSX128`/`LASX256` 寄存器类、`PseudoVREPLI_*` 在 MCTargetDesc 里被编码成 `VLDI` 的间接层（`vrepli` 与 `vldi` 共享编码）。补上 lowering 与 TableGen pattern 的接缝，也说明“改 LSX 要同步 LASX”到底要同步哪些定义。
+   - 前提：能读基本的 TableGen `def`/`Pat`/`Sched`，知道 `LSX128`/`LASX256` 寄存器类。
+
+4. **向量 IR 从哪里来** — `llvm/docs/Vectorizers.md`
+   - 读什么：`The Loop Vectorizer` 的 `Usage`（`-force-vector-width`、`-force-vector-interleave`）与 `Reductions` 小节
+   - 学到什么：本章从手写 `<4 x i32>` 出发；这份文档补上前端一侧：向量宽度/展开因子如何被强制，reduction 如何从循环里的 `sum` 变成向量归约，以及浮点归约只有在 `-fassociative-math -fno-signed-zeros -fno-trapping-math` 子集下才默认允许。它还点名 AArch64/RISC-V 有 ordered reduction，LoongArch 不在名单里；读 17.5 时可以顺带确认 LoongArch 的 `vhaddw` 链属于哪一类归约 lowering，而不是把“没有 ordered reduction”直接当成结论。
+   - 前提：知道 LLVM IR 的向量类型与 `llvm.vector.reduce.add` intrinsic。
+
+## 17.11 下一步
 
 Part 3 结束。**练习 C** 会让你写一个向量选指/combine 的小补丁并验证。之后进入 Part 4：机器层 pass（伪指令展开、`MergeBaseOffset`、`OptWInstrs`、分支优化、原子、调度）。

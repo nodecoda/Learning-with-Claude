@@ -24,10 +24,12 @@
 在 `llvm/lib/Target/LoongArch/LoongArchInstrInfo.td` 末尾追加：
 
 ```tablegen
-def ADD_DU : ALU_3R<0x00108001>,
+def ADD_DU : ALU_3R<0x00280000>,
              Sched<[WriteIALU, ReadIALU, ReadIALU]>;
 def : InstAlias<"neg.d $rd, $rj", (SUB_D GPR:$rd, R0, GPR:$rj)>;
 ```
+
+> 为什么是 `0x00280000`：`Fmt3R` 的 `Inst{31-0} = op` 之后，`Inst{14-10}=rk`、`Inst{9-5}=rj`、`Inst{4-0}=rd` 会覆盖低 15 位。所以 `op` 的低 15 位必须是 0，且不能复用已有指令的 opcode（`0x00108000` 是 `add.d`）。`0x00280000` 是当前 `.td` 里未使用的槽位——新增玩具指令时先 `grep` 确认。
 
 三件事同时发生：
 
@@ -113,16 +115,16 @@ $T/bin/llvm-mc -triple=loongarch64-unknown-linux-gnu -filetype=obj pa.s -o pa.o
 $T/bin/llvm-objdump -d pa.o
 ```
 
-期望（`add.du` 的编码由 `0x00108001` 的位域 + `rd/rj/rk` 覆盖得到；`neg.d` 应打印成 `sub.d`）：
+期望（`add.du` 的编码由 `0x00280000` 的位域 + `rd/rj/rk` 覆盖得到；`neg.d` 应打印成 `sub.d`）：
 
 ```text
-	add.du	$a0, $a1, $a2                   # encoding: [0xa4,0x98,0x10,0x00]
+	add.du	$a0, $a1, $a2                   # encoding: [0xa4,0x18,0x28,0x00]
 	sub.d	$a0, $zero, $a1                 # encoding: [0x04,0x94,0x11,0x00]
 ```
 
 > 上面的字节是**手算**的，请以你本机输出为准：
-> - `add.du`：把 `0x00108001` 的 `rd/rj/rk` 位段换成 `4/5/6` →
->   `0x00108000 | (6<<10 | 5<<5 | 4) = 0x001098a4`，小端 `a4 98 10 00`。
+> - `add.du`：把 `0x00280000` 的 `rd/rj/rk` 位段换成 `4/5/6` →
+>   `0x00280000 | (6<<10 | 5<<5 | 4) = 0x002818a4`，小端 `a4 18 28 00`。
 > - `neg.d` 展开成 `sub.d $a0, $zero, $a1` → `0x00118000 | (5<<10 | 4) = 0x00119404`，小端 `04 94 11 00`。
 >
 > `neg.d` 是别名，打印时优先走 `printAliasInstr`，所以反汇编可能显示 `neg.d` 也可能显示 `sub.d`——**这正是要观察的点**，测试的 `CHECK` 必须以实测为准。
@@ -157,7 +159,7 @@ neg.d $a0, $a1
 # RUN: llvm-mc -triple=loongarch64-unknown-linux-gnu -show-encoding %s | FileCheck %s
 add.du $a0, $a1, $a2
 # CHECK: add.du $a0, $a1, $a2
-# CHECK-NEXT: # encoding: [0xa4,0x98,0x10,0x00]
+# CHECK-NEXT: # encoding: [0xa4,0x18,0x28,0x00]
 ```
 
 ---
@@ -223,6 +225,162 @@ cd /home/ubuntu/llvm && JOBS=24 ./toolset/build.sh ct-instr-trunk llvm-mc llc
 
 ---
 
-## A.11 下一步
+## A.11 参考解答
+
+> 复核环境：`T=/home/ubuntu/llvm/builds/ct-instr-trunk`、`R=/home/ubuntu/llvm/trees/ct-instr-trunk`，2026-11-08。标「未实测」的步骤要重编工具链，本机没有重跑。
+
+<details>
+<summary>A.3：为什么新指令的 opcode 是 457？这个数字能写进脚本吗？</summary>
+
+用 A.2 的 `ADD_DU`（`ALU_3R<0x00280000>`）复制一份目录后只跑 tblgen：
+
+```bash
+D=/tmp/la_td_a1
+mkdir -p $D && cp -r $R/llvm/lib/Target/LoongArch/. $D/
+# 在 $D/LoongArchInstrInfo.td 末尾追加 A.2 的两行
+$T/bin/llvm-tblgen -I $R/llvm/include -I $D -gen-instr-info \
+  $D/LoongArch.td -o /tmp/pA-instrinfo.inc
+grep -n 'ADD_DU ' /tmp/pA-instrinfo.inc | head -1
+```
+
+实测：
+
+```text
+472:    ADD_DU                                = 457, // LoongArchInstrInfo.td:2809
+```
+
+457 是 `-gen-instr-info` 生成的**枚举序号**，不是 ISA 编码。它由 `.td` 里 `def` 的出现顺序决定：在中间插一条 `def`，后面所有 opcode 都会后移；追加在末尾时，新指令拿到当前最大值。所以：
+
+- 不要在脚本、测试、MIR 快照里写死 opcode 数字；
+- 要定位指令，用助记符（`ADD_DU`）或编码，不要用 457；
+- 行号 `2809` 是副本里的位置，会随文件内容变化，同样不要写死。
+
+</details>
+
+<details>
+<summary>A.3：`neg.d` 为什么没有新 opcode？它出现在哪张表？</summary>
+
+```bash
+$T/bin/llvm-tblgen -I $R/llvm/include -I $D -gen-asm-matcher \
+  $D/LoongArch.td -o /tmp/pA-matcher.inc
+$T/bin/llvm-tblgen -I $R/llvm/include -I $D -gen-asm-writer \
+  $D/LoongArch.td -o /tmp/pA-writer.inc
+grep -o 'add\.du' /tmp/pA-matcher.inc | head -1
+grep -n 'neg\.d' /tmp/pA-writer.inc | tail -1
+```
+
+实测：
+
+```text
+add.du
+4195:    /* 178 */ "neg.d $\x01, $\x03\0"
+```
+
+- AsmMatcher 的助记符表里出现了 `neg.d`，但匹配后展开成 `SUB_D` 的操作数，**不产生新 opcode**；
+- AsmWriter 的别名表里出现 `neg.d`，说明打印阶段可以用别名；
+- `InstAlias` 与 `def` 的区别就在这里：前者只影响“文本 ↔ 指令”的映射，后者才进指令枚举。
+
+反汇编时走 `printAliasInstr`，所以同一段字节可能打印成 `neg.d` 也可能打印成 `sub.d`。以你本机 `llvm-objdump -d` 的实际输出为准。
+
+</details>
+
+<details>
+<summary>A.5：往返编码怎么手算？为什么 `add.du` 这一步标「未实测」？</summary>
+
+`Fmt3R` 的位域是：
+
+```text
+Inst{31-0} = op;  Inst{14-10} = rk;  Inst{9-5} = rj;  Inst{4-0} = rd;
+```
+
+所以低 15 位永远是寄存器字段，`op` 的低 15 位必须是 0。`add.du $a0,$a1,$a2`（`rd=4, rj=5, rk=6`）：
+
+```text
+0x00280000 | (6<<10) | (5<<5) | 4
+= 0x00280000 | 0x1800 | 0xA0 | 0x4
+= 0x002818A4        → 小端 a4 18 28 00
+```
+
+`neg.d $a0,$a1` 展开成 `sub.d $a0,$zero,$a1`，这条可以立刻用现有工具验证：
+
+```bash
+printf 'sub.d $a0, $zero, $a1\n' > /tmp/sub.s
+$T/bin/llvm-mc -triple=loongarch64-unknown-linux-gnu -show-encoding /tmp/sub.s
+```
+
+实测：
+
+```text
+	sub.d	$a0, $zero, $a1                 # encoding: [0x04,0x94,0x11,0x00]
+```
+
+即 `0x00119404 = 0x00118000 | (5<<10) | 4`。
+
+`add.du` 的 `llvm-mc` 往返**未实测**：它要求把改过的 `.td` 真正编进 `llvm-mc`/`llc`，本机没有为这个练习重编工具链。上面的 `0x002818A4` 是按位域手算的结果，验证方法就是 A.4 重编后跑 A.5。
+
+> 早期版本这里写的是 `ALU_3R<0x00108001>`。`0x00108001` 的低位 `1` 会被 `rd` 字段覆盖，实际 opcode 仍是 `0x00108000`，与 `add.d` 完全相同——反汇编只会打印 `add.d`，`add.du` 永远不会出现。现已改为未使用的 `0x00280000`。
+
+</details>
+
+<details>
+<summary>A.6/A.7：测试里的 `CHECK` 应该写什么？</summary>
+
+**先跑，再写 CHECK。** 对别名：
+
+```bash
+$T/bin/llvm-mc -triple=loongarch64-unknown-linux-gnu -show-encoding pa.s
+```
+
+如果实际输出是 `sub.d $a0, $zero, $a1`，就写：
+
+```asm
+neg.d $a0, $a1
+# CHECK: sub.d $a0, $zero, $a1
+# CHECK-NEXT: # encoding: [0x04,0x94,0x11,0x00]
+```
+
+如果实际输出保留了 `neg.d`，就写 `neg.d`。**不要根据输入文本猜 CHECK**；别名打印由 `printAliasInstr` 决定，猜错的表现是“输出看起来对，测试却红”。
+
+新指令的 CHECK：
+
+```asm
+add.du $a0, $a1, $a2
+# CHECK: add.du $a0, $a1, $a2
+# CHECK-NEXT: # encoding: [0xa4,0x18,0x28,0x00]
+```
+
+跑测试：
+
+```bash
+$T/bin/llvm-lit -sv llvm/test/MC/LoongArch/alias-neg-d.s llvm/test/MC/LoongArch/add-du.s
+$T/bin/llvm-lit -s -j 24 llvm/test/MC/LoongArch
+```
+
+本树基线是 335 passed（Ch 00 实测）。加两个测试后应为 337 passed；这一条是**预期值，未实测**（本练习没有把玩具指令编进工具链）。
+
+</details>
+
+<details>
+<summary>A.8：为什么清理后必须重编？</summary>
+
+`llvm-mc`、`llc`、`llvm-objdump` 都静态链接了 TableGen 生成物（opcode 枚举、匹配表、打印表、解码表）。只 `git checkout` 源码而不重编，构建目录里仍然是带 `add.du` 的旧二进制。后面做 Ch 04–08 的实验时，会看到一条源码里已经不存在的指令，浪费大量时间排查。
+
+正确顺序：
+
+```bash
+cd /home/ubuntu/llvm/trees/ct-instr-trunk
+git checkout -- llvm/lib/Target/LoongArch/LoongArchInstrInfo.td
+# 删除新增的两个测试文件
+git status --short          # 应干净
+cd /home/ubuntu/llvm && JOBS=24 ./toolset/build.sh ct-instr-trunk llvm-mc llc
+```
+
+用 `$T/bin/llvm-mc -triple=loongarch64 -show-encoding` 再喂一次 `add.du`，确认报 `unrecognized instruction mnemonic`，才算清理完成。
+
+</details>
+
+---
+
+## A.12 下一步
 
 Part 1 完成。Part 2 进入 ABI 与链接：先看调用约定 lowering（Ch 09），再看栈帧（Ch 10）、代码模型与 TLS（Ch 11），最后用 `ld.lld` 的 relaxation 收尾（Ch 12）——也就是本树正在修的 #239812 所在的层。

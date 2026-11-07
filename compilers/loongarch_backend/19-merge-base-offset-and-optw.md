@@ -218,6 +218,28 @@ pre-RA expand pseudo → MergeBaseOffset → ... → MachineSSAOptimization(含 
 
 ---
 
-## 19.7 下一步
+## 19.7 延伸阅读
+
+1. **后端开关的声明方式与 `-help-hidden`** — `llvm/docs/CommandLine.md`
+   - 读什么：`Option Attributes` 中的 `cl::init`、`cl::Hidden`，以及 Quick Start 里 `-help` 与 `-help-hidden` 的说明
+   - 学到什么：本章 19.2 列出 `loongarch-disable-sextw-removal`、`loongarch-disable-cvt-to-d-suffix` 两个“隐藏开关”，但没讲它们为什么不出现在 `-help`。这里解释 `cl::Hidden` 只把选项从普通帮助里藏起来、仍会出现在 `-help-hidden`，而 `cl::init` 决定默认值。读完你能判断一个开关默认开还是关，也能理解 18.5 为什么建议先 `llc --help-hidden | grep loongarch`。
+   - 前提：读过本章 19.2 的开关代码片段；不需要自己写 pass。
+
+2. **用 `llvm-readobj -r` 验证 relax 标记** — `llvm/docs/CommandGuide/llvm-readobj.md`
+   - 读什么：`GENERAL AND MULTI-FORMAT OPTIONS` 里的 `--relocations, --relocs, -r` 与 `--expand-relocs`
+   - 学到什么：本章 19.1 说折叠后必须清 `MO_RELAX`，否则链接器会按旧序列删指令；这里给出验证手段：对 `.o` 跑 `llvm-readobj -r`，看 `R_LARCH_RELAX` 是否还挂在 `R_LARCH_PCALA_HI20`/`R_LARCH_PCALA_LO12` 旁边。补上“怎么用工具证明 pass 真的清干净”，而不是只看反汇编猜。
+   - 前提：知道 LoongArch 的 `R_LARCH_*` 重定位名，读过本章 19.1。
+
+3. **链接器 relaxation 的实际收缩与放弃** — `lld/test/ELF/loongarch-relax-pc-hi20-lo12.s`
+   - 读什么：`RELAX`、`NORELAX32`、`NORELAX64` 三组检查：`pcalau12i + addi.w/addi.d` 在范围内被收缩成 `pcaddi`，超出 `pcaddi` 范围时退回 `pcalau12i + addi.w/addi.d`
+   - 学到什么：本章只讲后端要清 `MO_RELAX`；这个 lld 测试展示链接器拿到标记后到底做什么，以及“偏移超出范围就放弃收缩”的判定。补上漏清标记会错位的另一半因果：链接器不是无条件删指令，而是按标记找可收缩的序列。
+   - 前提：读过本章 19.1，知道 `pcalau12i`/`addi.d`/`pcaddi` 的偏移范围差异；会读 lld 的 `RUN` 行。
+
+4. **RISC-V 课程里的 relaxation 副作用** — `compilers/elf_linking/README.md`（基准目录：`/home/ubuntu/Learning-with-Claude`）
+   - 读什么：Part 2 的 Ch 5「Relocation type 總論」与 Ch 7「R_RISCV_ALIGN 與 relaxation 的副作用」（按 README 的课程地图进入对应章）
+   - 学到什么：本章的 `MO_RELAX` 清理是 LoongArch 版本；RISC-V 课程把“链接器删/缩指令后，符号地址、对齐与调试信息如何变化”讲得更细，补上本章没展开的 relax 与对齐交互。读时注意 RISC-V 的 reloc 名和 `R_RISCV_ALIGN` 不能直接套到 LoongArch，只迁移问题意识。
+   - 前提：知道 relocation 与 section 的基本概念；不需要 LoongArch 背景。
+
+## 19.8 下一步
 
 下一章看 `MachineCombiner` 与 `LateBranchOpt`：前者在 LoongArch 上目前没有 pattern（空转），后者把“条件静态可知”的条件分支折成无条件跳转。

@@ -328,9 +328,9 @@ $T/bin/llc -mtriple=loongarch64 -O2 -debug-only=isel -o /dev/null if.ll 2>&1 | h
 
 ```text
 380 dagcombine      - Number of dag nodes combined
-226 isel            - Number of blocks selected using DAG
-713 isel            - Number of times dag isel has to try another path
-120 isel            - Number of entry blocks encountered
+225 isel            - Number of blocks selected using DAG
+708 isel            - Number of times dag isel has to try another path
+119 isel            - Number of entry blocks encountered
 ```
 
 ---
@@ -359,6 +359,153 @@ $T/bin/llc -mtriple=loongarch64 -O2 -debug-only=isel -o /dev/null if.ll 2>&1 | h
 
 ---
 
-## D.9 延伸
+## D.9 参考解答
+
+> 复核环境：2026-11-08，MIR 全部用 `$T/bin/llc -mtriple=loongarch64 -run-pass=...` 重跑。除特别说明外，输出逐字一致。
+
+<details>
+<summary>D.2：四个 MIR 坑的真实报错分别是什么？</summary>
+
+按 D.2 的四份输入运行，实测报错：
+
+```text
+error: bad1.mir:10:10: unknown register name 'zero'
+error: bad2.mir:11:5: unknown machine instruction name 'RET'
+error: bad3.mir:11:5: unknown machine instruction name 'ret'
+error: YAML:5:1: missing required key 'name'
+```
+
+对应结论：
+
+| 写法 | 结果 | 正确写法 |
+|---|---|---|
+| `$zero` | 寄存器名不存在 | `$r0` |
+| `RET` | 机器指令名不存在 | `PseudoRET` |
+| `ret` | 小写也不存在 | `PseudoRET` |
+| 删除 `name:` | YAML 解析失败 | 保留 `name:` |
+
+另外，IR 段（`--- |` … `...`）可以省略，`-run-pass` 仍能跑；但保留它能让 `%ir.a`、`(load (s64))` 之类的注释更可读，`-stop-after` 生成的 MIR 建议原样保留。
+
+</details>
+
+<details>
+<summary>D.3：`loongarch-late-branch-opt` 折什么、不折什么？</summary>
+
+会折：
+
+```yaml
+bb.0:
+  liveins: $r4
+  BEQ $r4, $r4, %bb.2
+  PseudoBR %bb.1
+```
+
+实测输出：
+
+```yaml
+bb.0:
+  successors: %bb.2(0x80000000)
+  liveins: $r4
+
+  PseudoBR %bb.2
+```
+
+不会折：
+
+```yaml
+  BEQ $r4, $r0, %bb.2
+  PseudoBR %bb.1
+```
+
+实测保持原样（`successors` 仍是 `%bb.2, %bb.1` 两个）。
+
+原因在 `LoongArchLateBranchOpt.cpp:63-78`：对 `BEQ/BNE` 只接受“同一个寄存器跟自己比”；对 `BEQZ/BNEZ` 只接受“跟 `$r0` 比”。普通 `x == 0` 在更早的 MachineCombiner 已经换成 `BEQZ`，不需要这个 pass 再做。
+
+</details>
+
+<details>
+<summary>D.4：为什么 `dead-defs` 跳过 `ADD_W`，却改写 `LD_D`？</summary>
+
+实测：
+
+```text
+# ADD_W
+    dead %0:gpr = ADD_W $r4, $r5
+
+# LD_D
+    dead $r0 = LD_D $r4, 0 :: (load (s64))
+```
+
+`ADD_W` 只多了 `dead` 标记，目的寄存器没有变成 `$r0`；`LD_D` 则直接把目的寄存器改成 `$r0`。源码在 `LoongArchDeadRegisterDefinitions.cpp:70-75`：
+
+```cpp
+// We only handle non-computational instructions.
+const MCInstrDesc &Desc = MI.getDesc();
+if (!Desc.mayLoad() && !Desc.mayStore() && !Desc.hasUnmodeledSideEffects())
+  continue;
+```
+
+它只处理可能访存/有副作用的指令。把 load 的目的寄存器改成 `$r0` 仍然保留这条 load，是因为 load 本身可能有异常（缺页）语义，不能因为结果没人用就删掉。计算指令没有这种副作用，所以只标 `dead`，留给后续 pass 删。
+
+</details>
+
+<details>
+<summary>D.5：`merge-base-offset` 的触发条件是什么？去掉 `dso_local` 会怎样？</summary>
+
+折叠前（`-stop-after=loongarch-prera-expand-pseudo`）：
+
+```yaml
+%2:gpr = PCALAU12I target-flags(loongarch-pcrel-hi) @g
+%0:gpr = ADDI_D %2, target-flags(loongarch-pcrel-lo) @g
+%1:gpr = LD_D %0, 0 :: (dereferenceable load (s64) from @g)
+```
+
+折叠后（`-stop-after=loongarch-merge-base-offset`，`-relocation-model=static` + `dso_local`）：
+
+```yaml
+%2:gpr = PCALAU12I target-flags(loongarch-pcrel-hi) @g
+%1:gpr = LD_D %2, target-flags(loongarch-pcrel-lo) @g :: (dereferenceable load (s64) from @g)
+```
+
+`ADDI_D` 消失，`%pc_lo12` 直接落在 `LD_D` 的立即数位上。
+
+去掉 `dso_local` 后实测：
+
+```yaml
+%2:gpr = PCALAU12I target-flags(loongarch-got-pc-hi) @g
+%0:gpr = LD_D %2, target-flags(loongarch-got-pc-lo) @g :: (dereferenceable invariant load (s64) from got)
+%1:gpr = LD_D %0, 0 :: (dereferenceable load (s64) from @g)
+```
+
+走 GOT：先 load GOT 项，再从 GOT 项 load 值，`ADDI_D` 没有出现。触发条件可以记成一句话：**非 PIC + 符号本地可见**；缺一个就退回 GOT/PC-relative 的通用序列。
+
+</details>
+
+<details>
+<summary>D.6：`-stats` 的参考值到底是多少？</summary>
+
+对本树 `llvm/test/CodeGen/LoongArch/bittest.ll`：
+
+```bash
+$T/bin/llc -mtriple=loongarch64 -O2 -stats -o /dev/null \
+  $R/llvm/test/CodeGen/LoongArch/bittest.ll 2>&1 | grep -E 'dagcombine|isel'
+```
+
+实测（2026-11-08）：
+
+```text
+380 dagcombine              - Number of dag nodes combined
+225 isel                    - Number of blocks selected using DAG
+708 isel                    - Number of times dag isel has to try another path
+119 isel                    - Number of entry blocks encountered
+```
+
+早期版本这里写的是 `226 / 713 / 120`，是旧构建的数值；已按本次实测修正。`-stats` 的具体数字会随代码和优化流水线变化，**引用时必须带命令、输入文件和日期**，否则读者无法判断差异来自哪里。
+
+</details>
+
+---
+
+## D.10 延伸
 
 把 D.5 的 `mb.ll` 改成 `%v = load i64, ptr @g, align 8` 之外的形状（例如 `getelementptr` + `load`），观察 `ADDI_D` 是否还能被折进访存；再试 `-mcmodel=large`（Ch 11），记录序列从 2 条变成 5 条时 pass 的行为。

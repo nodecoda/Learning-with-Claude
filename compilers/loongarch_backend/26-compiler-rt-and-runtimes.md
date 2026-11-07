@@ -264,6 +264,28 @@ ninja -C /home/ubuntu/llvm/builds/ct-instr-trunk-runtimes
 
 ---
 
-## 26.11 下一步
+## 26.11 延伸阅读
+
+1. **`fp128` 的类型语义** — `llvm/docs/LangRef.md`
+   - 读什么：`##### Floating-Point Types` 小节的 `fp128` 行，以及相邻的 `x86_fp80`、`ppc_fp128` 对照。
+   - 学到什么：LA64 的 `long double` 为什么是 `fp128`（IEEE 754 binary128），以及为什么它没有对应的硬件指令、只能落到 `GENERIC_TF_SOURCES` 的软实现。本章 26.2 给了 CMake 清单，这里补上 IR 类型这一层。
+   - 前提：知道 `long double` 在目标 ABI 中的宽度；读过 26.2。
+
+2. **用 `llvm-objdump` 对照 runtime 源码** — `llvm/docs/CommandGuide/llvm-objdump.md`
+   - 读什么：`## COMMANDS` 的 `-d`/`--disassemble`，以及 `## OPTIONS` 里的 `--no-show-raw-insn`、`--no-print-imm-hex`。
+   - 学到什么：复现本章 26.3 的 `fp_mode.o` 反汇编；只留助记符、固定立即数进制后，`bstrpick.d`/`ldx.bu`/`lu12i.w` 与 C 源码的对应关系更容易逐行核对。补上“怎么从 runtime 的 C 代码走到 LoongArch 指令”的方法。
+   - 前提：读过 26.3，知道 `__fe_getround`/`__fe_raise_inexact` 的源码。
+
+3. **用 `llvm-readobj` 检查链接产物** — `llvm/docs/CommandGuide/llvm-readobj.md`
+   - 读什么：`## ELF SPECIFIC OPTIONS` 里的 `--file-header`、`--program-headers`、`--relocations`、`--symbols`，以及 `--elf-output-style=GNU`。
+   - 学到什么：验证本章 26.6 的 `hello` 为什么是 PIE、解释器是谁、依赖哪些动态符号；把“链接成功”变成可检查的 ELF 证据。本章只看了 `file` 输出，这里补上 header/segment/relocation 三个层次。
+   - 前提：知道 ELF header、program header、动态符号表的基本字段；读过 26.5–26.6。
+
+4. **driver 与 lld 的责任边界** — `lld/docs/index.md`
+   - 读什么：`## Features` 与 `## Using LLD` 两节，特别是“linkers are invoked by compiler drivers”那段。
+   - 学到什么：`clang` 负责找 `Scrt1.o`/`crti.o`/`libgcc` 并组装命令行，`ld.lld` 负责链接 driver 交给它的输入；这解释了 26.1 的 `ld: cannot find Scrt1.o` 为什么是 driver/构建配置问题，而不是 lld 的 LoongArch 后端问题。补充 26.5 的分工表。
+   - 前提：读过 26.1、26.5，知道 crt 对象与 `libgcc` 的角色。
+
+## 26.12 下一步
 
 运行时看完了，下一章进入“怎么证明你改对了”：lit 测试布局、`update_llc_test_checks.py` 的实际用法与本树的测试基线。

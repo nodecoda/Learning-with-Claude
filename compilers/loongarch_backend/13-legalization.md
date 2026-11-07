@@ -237,6 +237,28 @@ if (STI.has32S()) {
 
 ---
 
-## 13.8 下一步
+## 13.8 延伸阅读
+
+1. **SelectionDAG Legalize 的官方流程** — `llvm/docs/WritingAnLLVMBackend.md`
+   - 读什么：`### The SelectionDAG Legalize Phase`（1358 行起），包括 `addRegisterClass` 和 `setOperationAction` 等回调列表。
+   - 学到什么：本章 13.1 把合法化分成“类型/操作”两层；这一节给出 `setLoadExtAction`/`setTruncStoreAction`/`setIndexedLoadAction` 等本章没提的回调，说明 `setOperationAction` 不是唯一入口。
+   - 前提：读过本章 13.1 和 13.3。
+
+2. **LoongArch 的裁判表源码** — `llvm/lib/Target/LoongArch/LoongArchISelLowering.cpp`
+   - 读什么：构造函数里的 `setOperationAction` 段（约 107–230 行），特别是 `if (STI.has32S())` 分支（140 行起）、`if (Subtarget.is64Bit())` 段（172 行起）和 `if (!Subtarget.is64Bit())` 段（201 行起）。
+   - 学到什么：本章 13.3 按“为什么”分组；源码里 172–200 行是 LA64 的 `i32` Custom 列表，201 行起才是 LA32 专属动作。直接读能确认每条动作的 feature 条件，避免只背表格。
+   - 前提：读过本章 13.3 的分组表。
+
+3. **`half` 软化的回归测试** — `llvm/test/CodeGen/LoongArch/fp16-promote.ll`
+   - 读什么：`test_load_store`、`test_fadd_reg` 等函数的 `LA32`/`LA64` `CHECK`，重点看 `ld.h`/`st.h` 与 `__extendhfsf2`/`__truncsfhf2` 的分界。
+   - 学到什么：本章 13.2 用 `fadd half` 展示三次 libcall；这份测试补上“什么时候 `half` 只做 load/store 提升、不调用 `__extendhfsf2`”，帮助区分类型提升与操作软化。
+   - 前提：读过本章 13.2 的 `half` 段。
+
+4. **GlobalISel 的另一套合法化词汇** — `llvm/docs/GlobalISel/Legalizer.md`
+   - 读什么：`### Rule Actions`（146 行起）里的 `legalIf`/`narrowScalarIf`/`widenScalarIf`/`lowerIf`/`libcallIf`/`customIf`/`unsupportedIf`，以及 `## Minimum Rule Set`。
+   - 学到什么：本章讲的是 SelectionDAG 的 `Legal`/`Expand`/`Custom`；GlobalISel 用不同的动作名和规则粒度表达同一件事，读这一节可以避免把两套术语混用。
+   - 前提：知道本章 13.1 的两层合法化。
+
+## 13.9 下一步
 
 下一章看选指：`LoongArchISelDAGToDAG::Select` 和 `.td` 里的 `Pat<>` 如何把合法化后的 DAG 映射到具体 opcode，以及 `ComplexPattern` 在什么时候必须手写 C++。

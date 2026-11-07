@@ -309,6 +309,28 @@ MIR 里物理寄存器用 `$r4`/`$a0` 两种写法都可能出现；`-print-afte
 
 ---
 
-## 5.11 下一步
+## 5.11 延伸阅读
+
+1. **寄存器类与调用约定的官方教程** — `llvm/docs/WritingAnLLVMBackend.md`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：`## Register Set and Register Classes` 下的 `### Defining a Register`、`### Defining a Register Class`、`### Implement a subclass of TargetRegisterInfo`，以及 `### Calling Conventions`。
+   - 学到什么：补 5.1/5.5 的框架：寄存器类为什么要按宽度分层、CSR 为什么用 TableGen 生成；注意该文的 `CallingConv.td` 例子讲参数分配，和 LoongArch 只放 `CalleeSavedRegs` 的分工不同。
+   - 前提：能读 `RegisterClass<...>` 与 `CalleeSavedRegs<...>` 的 TableGen 语法（本章 5.1/5.5）。
+
+2. **物理寄存器、别名与 spill** — `llvm/docs/CodeGenerator.md`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：`### The TargetRegisterInfo class` 与 `### Register Allocation` 下的 `#### How registers are represented in LLVM`（物理寄存器编号、aliased registers、Register Class）。
+   - 学到什么：解释 5.1 的 `F0`/`F0_64`/`$vr0`/`$xr0` 共享编码在 LLVM 里体现为子寄存器/别名关系；理解 5.6 的 spill 为什么发生。
+   - 前提：知道虚拟寄存器与物理寄存器的区别（本章 5.7 的 MIR 观察）。
+
+3. **CSR 集合的原始定义** — `llvm/lib/Target/LoongArch/LoongArchCallingConv.td`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：`CSR_ILP32S_LP64S`、`CSR_ILP32F_LP64F`、`CSR_ILP32D_LP64D`、`CSR_NoRegs`、`CSR_NoneRegs`、`CSR_MostRegs` 六个 `CalleeSavedRegs` 定义。
+   - 学到什么：核对 5.5 的表；看清软浮点只保存 `R1` 与 `R22–R31`，单/双精度分别追加 `F24–F31` 的 32/64 位视图。
+   - 前提：知道 `R1` 是 `$ra`、`R22–R31` 是 `$fp`/`$s0–$s8`（本章 5.3/5.5）。
+
+4. **ABI 手册的寄存器约定与栈布局** — `https://loongson.github.io/LoongArch-Documentation/LoongArch-ELF-ABI-EN.html`（外部链接）
+   - 读什么：`Register Convention`、`Procedure Calling Convention` 下的 `Argument Registers`，以及 `ABI LP64D` 的 `Argument passing`、`Return values`、`Stack` 三小节。
+   - 学到什么：补本章从编译器侧反推的 ABI 规则：哪些寄存器 caller-saved、参数寄存器顺序、栈对齐与参数溢出规则。
+   - 前提：读过本章 5.5/5.6，能把 `$a0–$a7`/`$fa0–$fa7` 和 CSR 表对上。
+
+## 5.12 下一步
 
 下一章进入 MC 层：从 `Fmt3R` 的位域到 `MCCodeEmitter`、fixup、`AsmBackend`，把 `add.d` 的 32 位字和 `%pc_hi20` 的重定位都走一遍。

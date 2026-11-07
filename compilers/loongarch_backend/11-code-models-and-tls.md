@@ -257,6 +257,28 @@ tlsgd:
 
 ---
 
-## 11.10 下一步
+## 11.10 延伸阅读
+
+1. **IR 层的 TLS 模型语义** — `llvm/docs/LangRef.md`
+   - 读什么：`### Thread Local Storage Models`（598 行起），四种模型（`localdynamic`/`initialexec`/`localexec`/默认 general dynamic）的定义，以及“target 可以改选模型”的那段。
+   - 学到什么：本章 11.5 从 `lowerGlobalTLSAddress()` 的分派反推模型；这一节是规范侧的定义，能解释为什么静态非 PIC 下 GD 可以被降级成 IE（“target may choose a different TLS model”）。
+   - 前提：知道 ELF TLS 的四种模型名字。
+
+2. **`getAddr()` 与 `lowerGlobalTLSAddress()` 的分支** — `llvm/lib/Target/LoongArch/LoongArchISelLowering.cpp`
+   - 读什么：`getAddr()`（4605 行起）里 Small/Medium/Large 的 `switch`、`lowerGlobalAddress()`（4696 行起）的 `isDSOLocal()` 判定、`lowerGlobalTLSAddress()`（4801 行起）的三种 `PseudoLA_TLS_*` 分派，以及 `getAddr()` 末尾 `!IsLocal` 分支设置的 `MOInvariant` 内存操作数。
+   - 学到什么：本章 11.2/11.4 只贴了关键片段；源码里 GOT load 被标成 `MOLoad | MODereferenceable | MOInvariant` 的位置，能解释 11.6 说的 LICM 为什么能把循环里的全局变量地址提到循环外。
+   - 前提：读过本章 11.2–11.5。
+
+3. **TLS 与代码模型的 lit 矩阵** — `llvm/test/CodeGen/LoongArch/tls-models.ll`
+   - 读什么：开头 9 条 `RUN` 行（LA32/LA64、PIC/非 PIC、`--code-model=large`、`--enable-tlsdesc`），以及每个模型对应的 `CHECK` 序列；文件注释还特别要求符号保持 external。
+   - 学到什么：本章 11.5 的“静态非 PIC 下 GD 降级成 IE”在测试里用不同 triple/relocation-model 组合固定下来；注释里“避免所有变量都被优化成 Local Exec”正是 11.5 那个反直觉结果的测试侧前提。
+   - 前提：读过本章 11.5 的三种序列。
+
+4. **PIC 与 TLS 的链接器视角** — `compilers/elf_linking/README.md`（相对 `/home/ubuntu/Learning-with-Claude`）
+   - 读什么：Part 4 的 Ch 11《PIC / PIE 與 code model》与 Ch 12《TLS Model：LE / IE / GD / LD》。
+   - 学到什么：本章从编译器 lowering 角度看 TLS；这门课从链接器和动态加载角度看同一组模型，能补上 `GOT`/`PLT`/`__tls_get_addr` 在链接后如何落地。
+   - 前提：读过本章 11.2 的 pcrel/GOT 区分。
+
+## 11.11 下一步
 
 下一章进链接器：`lld/ELF/Arch/LoongArch.cpp` 怎么把 `R_LARCH_RELAX` 和它标注的重定位配对、`relax()` 状态机怎么写、以及 #239812 的 hint-first 输入为什么会让它只收缩一半。

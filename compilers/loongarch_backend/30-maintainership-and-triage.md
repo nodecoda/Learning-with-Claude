@@ -225,7 +225,29 @@ c9ebe2a5fd40 [LoongArch] Remove duplicate addRequired in LoongArchDeadRegisterDe
 
 ---
 
-## 30.12 结课
+## 30.12 延伸阅读
+
+1. **Maintainer 的职责与权限路径** — `llvm/docs/DeveloperPolicy.md`
+   - 读什么：`### Maintainers`、`### Obtaining Commit Access`、`### Obtaining Other Access or Permissions`、`### Patch reversion policy` 四节。
+   - 学到什么：30.6/30.8 的“commit-after-approval”“申请权限要证据链”在政策中的原文；补上 maintainer 的具体职责（review、确认 issue、参与 RFC、协助 release backport）以及退出/恢复机制。
+   - 前提：读过 30.6、30.8。
+
+2. **AI 时代的 triage 边界** — `llvm/docs/AIToolPolicy.md`
+   - 读什么：`## Details`（human-in-the-loop、禁止用 AI 工具修 `good first issue`）、`## Extractive Contributions`、`## Handling Violations`。
+   - 学到什么：为什么“让 agent 自动扫 issue 并提 PR”会变成 extractive contribution；triage 时如何判断一个 AI 生成补丁是否值得 review。30.4 讲“怎么选第一个 issue”，这里补上政策约束。
+   - 前提：读过 30.4、30.6；知道 `good first issue` 标签的含义。
+
+3. **把模糊报告缩成可 triage 的输入** — `llvm/docs/CommandGuide/llvm-reduce.md`
+   - 读什么：`## DESCRIPTION`、`## GENERIC OPTIONS` 的 `--test`/`--test-arg`/`-x={ir|mir}`、`## EXAMPLE`。
+   - 学到什么：30.4 说“没有 reduced testcase 就先自己写一个”；这份文档给出自动化路径——用 interestingness test 驱动 `llvm-reduce`，把大 IR/MIR 缩到最小复现。补上手工最小化之外的工具化方法。
+   - 前提：有一个稳定失败命令；读过 27.7 或 28.8 的 lit/MIR 基础。
+
+4. **后端组件边界地图** — `llvm/docs/CodeGenerator.md`
+   - 读什么：`## Introduction`、`### Required components in the code generator`、`### The high-level design of the code generator`。
+   - 学到什么：30.3 的决策树把问题分给 clang/后端/MC/lld；这份文档补上后端内部的对象边界（`TargetMachine`、`TargetLowering`、`TargetRegisterInfo`、`TargetInstrInfo`、`TargetFrameLowering`、`TargetSubtarget`），帮助判断问题更可能在 legalization、isel 还是 frame lowering。
+   - 前提：读过 30.3；对 Ch 03 的 codegen pipeline 有印象。
+
+## 30.13 结课
 
 到这里，你应该能做到：
 

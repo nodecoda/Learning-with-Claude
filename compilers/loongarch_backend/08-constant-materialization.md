@@ -343,6 +343,28 @@ p52m1:
 
 ---
 
-## 8.11 下一步
+## 8.11 延伸阅读
+
+1. **`generateInstSeq()` 的完整分支** — `llvm/lib/Target/LoongArch/MCTargetDesc/LoongArchMatInt.cpp`
+   - 读什么：15–22 行的四段注释、24–27 行的 `LU52I_D` 早退、29–40 行的低 32 位三分支、42–50 行的高 32 位两道检查，以及 56–140 行的 `BSTRINS_D` 合并枚举（注释 60–72 行列了 5 种场景：N=3 的 4 种加 N=4 的 1 种）。
+   - 学到什么：本章 8.3 只逐段贴了主分支；源码里 `BSTRINS_D` 的完整场景表和 `Inst` 里 `Msb << 32 | Lsb` 的打包方式值得完整读一遍，能补上 8.5 没展开的 N=4 情形以及 `TmpVal1`/`TmpVal2` 的构造。
+   - 前提：读过本章 8.3 与 8.5。
+
+2. **MC 层伪指令的对照输出** — `llvm/test/MC/LoongArch/Macros/macros-li.s`
+   - 读什么：`li.w` / `li.d` 成对出现的 `CHECK` 行，重点看 `0x80000000` 那一组（`lu12i.w` + `lu32i.d 0`）和 `0xfffff800` 那一组（`addi.w`）。
+   - 学到什么：本章 8.7 说“`li.w` 先做 32 位符号扩展”；这份测试把同一条 `generateInstSeq()` 在两个伪指令下的差异逐条固定下来，可以直接当反例表用。
+   - 前提：读过本章 8.2 的“一份代码，三个调用者”。
+
+3. **SelectionDAG 侧的常量选择** — `llvm/test/CodeGen/LoongArch/imm.ll`
+   - 读什么：`imm0`、`imm7ff0000000000000` 等函数的 `CHECK-NEXT` 序列，重点看 `0` 的 `move $a0, $zero` 和 `2^52` 的 `lu52i.d`。
+   - 学到什么：本章 8.6 的 `0` 特判和 8.3 的单条早退在 `llc` 输出里长什么样；这份测试由 `update_llc_test_checks.py` 生成，可以对照本章 8.8 的手工命令看同一批常量。
+   - 前提：会读 FileCheck 的 `CHECK-LABEL`/`CHECK-NEXT`。
+
+4. **立即数字段宽度与位域语义** — `compilers/tablegen_internals/README.md`（相对 `/home/ubuntu/Learning-with-Claude`）
+   - 读什么：Part 2 的 Ch 10《位域、`bits<>` 与字段偏移的语义》。
+   - 学到什么：本章 8.5 提到 `bstrins.d` 的 `Msb`/`Lsb` 是 6 位字段、`lu52i.d` 的立即数是 12 位；这门课解释 TableGen 的 `bits<N>` 和字段偏移如何决定这些范围，避免把“指令语义”和“编码宽度”混为一谈。
+   - 前提：读过本章 8.1 的字段图和 8.5 的打包代码。
+
+## 8.12 下一步
 
 Part 1 的正文到这里结束。接下来是**练习 A**：真的往 `.td` 里加一条指令，重编 `llc`/`llvm-mc`，跑通“汇编 → 编码 → 反汇编”的往返，并补一条 MC 测试。做完练习 A，你就有能力独立处理 `[LoongArch]` 的 MC 层补丁了。

@@ -200,6 +200,28 @@ def : ProcessorModel<"la664", LA664Model, [Feature64Bit, FeatureUAL,
 
 ---
 
-## 23.10 下一步
+## 23.10 延伸阅读
+
+1. **`llvm-mca` 的瓶颈分析与时间线** — `llvm/docs/CommandGuide/llvm-mca.md`
+   - 读什么：`HOW LLVM-MCA WORKS` 下的 `Timeline View`、`Bottleneck Analysis`、`Extra Statistics to Further Diagnose Performance Issues`，以及 `USING MARKERS TO ANALYZE SPECIFIC CODE BLOCKS`
+   - 学到什么：本章 23.3 只读 `IPC`/`Block RThroughput`/`Total Cycles`；文档补上 `-bottleneck-analysis` 如何把停顿归因到资源压力或数据依赖、`-all-stats` 能看 dispatch/ROB/retire 的哪些计数、以及用 `# LLVM-MCA-BEGIN/END` 只分析循环体。注意 `Bottleneck Analysis` 小节末尾提示 in-order 后端不支持该分析，先在目标模型上试跑确认。
+   - 前提：读过本章 23.1–23.3；知道 `ProcResource` 与 dispatch width 的概念。
+
+2. **调度模型覆盖度检查工具** — `llvm/docs/WritingAnLLVMBackend.md`
+   - 读什么：`Instruction Scheduling` 小节，重点文档里 `schedcover.py` 的覆盖度检查用法与 `llvm-tblgen -debug-only=subtarget-emitter -gen-subtarget` 命令
+   - 学到什么：本章 23.6 说 `CompleteModel = 0` 会“静默降级”；这份教程给出正面检查手段：用 `schedcover.py` 列出哪些指令没有被任何调度模型覆盖，用 `subtarget-emitter` 的 debug 输出看模型怎么生成。补上“改完 `.td` 后怎么确认没有漏指令”，而不是等 `llvm-mca` 报警告。
+   - 前提：知道 TableGen 会生成 `GenSubtargetInfo.inc`；读过本章 23.1。
+
+3. **LA664 的资源定义与 `WriteRes`** — `llvm/lib/Target/LoongArch/LoongArchSchedLA664.td`
+   - 读什么：`LA664Model` 的五个字段、`LA664ALU0`–`LA664ALU3`/`LA664AGU0`–`LA664AGU3` 的 `ProcResource`、`LA664ALU`/`LA664AGU` 的 `ProcResGroup` 与 `BufferSize`，以及文件后半段 `WriteRes<WriteIALU, [LA664ALU]>` 这类资源映射
+   - 学到什么：本章 23.2 的表格来自这里；源码补上表格没展开的层次：`ProcResource<1>` 是单端口，`ProcResGroup` 把多个端口合成可互换组，`BufferSize` 对应调度器缓冲条目。看懂这些才能解释为什么 `IssueWidth = 6` 不等于 6 个 ALU 端口，也才能判断一条新指令该挂到哪个 `ProcResource`。
+   - 前提：读过本章 23.2；能读 TableGen 的 `def`/`let`。
+
+4. **`-mcpu` 与 feature 列表的对应关系** — `llvm/lib/Target/LoongArch/LoongArch.td`
+   - 读什么：`:202` 的 `ProcessorModel<"la464", ...>` 与 `:209` 的 `ProcessorModel<"la664", ...>` 的 feature 列表，以及 `FeatureExtLASX`/`FeatureExtLVZ`/`FeatureExtLBT`/`FeatureFrecipe`/`FeatureLAM_BH` 等 `SubtargetFeature` 定义
+   - 学到什么：本章 23.5 提醒 `-mcpu=la664` 会打开一堆扩展；在 `.td` 里能逐项看到两边的差异。注意 LA464 的列表里也已经有 LASX/LVZ/LBT，真正多出来的是 frecipe、LAM_BH、LAMCAS、LD_SEQ_SA、Div32、SCQ 等，所以读 23.5 时要以 feature 列表为准，不要记成“只有 la664 才开 LASX”。这也解释了为什么“只想换调度模型”时要用 `-mattr=-...` 精确关掉。
+   - 前提：读过本章 23.5；知道 `SubtargetFeature` 的依赖链。
+
+## 23.11 下一步
 
 Part 4 结束。**练习 D** 会让你用 `-run-pass` 驱动一个机器层 pass，并写一个 MIR 测试。之后进入 Part 5：clang 驱动、builtin、runtime。

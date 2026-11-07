@@ -322,6 +322,28 @@ $ echo '0x00 0x00 0x40 0x3' | llvm-mc -triple=loongarch64-unknown-linux-gnu -dis
 
 ---
 
-## 7.11 下一步
+## 7.11 延伸阅读
+
+1. **原生汇编器的三段流水线** — `llvm/docs/CodeGenerator.md`
+   - 读什么：`## Implementing a Native Assembler` 下的 `### Instruction Alias Processing`（1651 行起）与 `### Instruction Matching`（1751 行起）；`### Instruction Parsing` 目前只有 "To Be Written" 占位，可以跳过。
+   - 学到什么：本章 7.5 只展示 `InstAlias` 的结果，这里补上 LLVM 对别名的通用分类（按“最弱到最强”依次处理）以及 `MatchInstructionImpl` 里别名处理与实际匹配的先后关系。
+   - 前提：读过本章 7.2 的 `parseInstruction → MatchInstructionImpl` 路径，知道 `MCInst` 是什么。
+
+2. **生成物视角：AsmWriter / AsmMatcher / Disassembler** — `llvm/docs/TableGen/BackEnds.md`
+   - 读什么：`### AsmWriter`、`### AsmMatcher`、`### Disassembler` 三节（110–141 行），以及 `### PseudoLowering`（142 行起）。
+   - 学到什么：本章说“生成 + 手写”但没有展开各 TableGen backend 的输入与输出；这几节说明 `.td` 的哪部分分别变成打印器、匹配表和解码表，以及伪指令 lowering 表由谁生成。
+   - 前提：知道本章 7.1 表格里 `GenAsmWriter.inc`、`GenAsmMatcher.inc`、`GenDisassemblerTables.inc` 分别被谁 include。
+
+3. **`llvm-mc` 的往返选项** — `llvm/docs/CommandGuide/llvm-mc.md`
+   - 读什么：`## OPTIONS` → `### End-user Options` 里的 `--disassemble`（68 行）、`--triple`（114 行）、`--show-encoding`（130 行）三条 option 说明。
+   - 学到什么：本章 7.7 只用了其中几个开关；这里补齐每个开关的语义和输入格式约束，尤其是 `--disassemble` 对十六进制 token 的解析方式，对应 7.7 末尾那个十进制坑。
+   - 前提：跑过本章 7.7 的 `llvm-mc` 往返实验。
+
+4. **别名与数字寄存器名的回归测试** — `llvm/test/MC/LoongArch/Misc/no-aliases.s`
+   - 读什么：文件开头的 4 组 `RUN` 行、`move $a0, $r21` / `ret` 两行输入，以及 `CHECK` 与 `CHECK-NUMERIC` 的期望输出；最后一条 `-M no-aliases,numeric` 也在这份文件里。
+   - 学到什么：本章 7.5 的“打印优先用别名”和 7.3 的 `-Mreg-names=numeric` 在 lit 里怎么被同时固定下来；`move` 在 `no-aliases` 下回到 `or`、`ret` 回到 `jirl`，正好对应 7.5 的别名表。
+   - 前提：知道 FileCheck 的 `CHECK`/`CHECK-NEXT` 基本用法。
+
+## 7.12 下一步
 
 下一章看常量物化：`li.w 1` / `li.d 0x123456789` 这种“一条伪指令”在 MC 层和选指层分别怎么变成 1–5 条真指令，以及 `LoongArchMatInt::generateInstSeq()` 的贪心策略。

@@ -346,6 +346,28 @@ llc -mtriple=loongarch64-unknown-linux-gnu -O2 -print-after=prologepilog fn.ll -
 
 ---
 
-## 10.11 下一步
+## 10.11 延伸阅读
+
+1. **`TargetFrameLowering` 的接口清单** — `llvm/docs/WritingAnLLVMBackend.md`
+   - 读什么：`### Implement a subclass of TargetFrameLowering`（638 行起）列出的 `hasFPImpl`、`eliminateCallFramePseudoInstr`、`emitPrologue`、`emitEpilogue` 四项。
+   - 学到什么：本章 10.2 只讲了 `hasFPImpl` 的四个条件；读完能先分清框架层的四个入口，再去读 LoongArch 的同名实现时不会把寄存器保存和帧布局混进 `emitPrologue`。
+   - 前提：读过本章 10.1 的判定顺序。
+
+2. **`FirstSPAdjustAmount` 与 `adjustReg` 的源码** — `llvm/lib/Target/LoongArch/LoongArchFrameLowering.cpp`
+   - 读什么：`hasFPImpl()`（36 行）、`allocateStack()`（187 行）、`emitPrologue()`（298 行）、`getFirstSPAdjustAmount()`（552 行）、`determineCalleeSaves()`（570 行），以及 `emitEpilogue()`（416 行起）里 `FirstSPAdjustAmount` 的逆操作。
+   - 学到什么：本章 10.3 解释了 `2048 - StackAlign` 的选值；源码里 `adjustReg` 的三条路径和 epilogue 的配对逻辑只有连起来读，才能确认“prologue 怎么拆、epilogue 怎么拆回去”。
+   - 前提：读过本章 10.3 和 10.5。
+
+3. **动态栈探测的展开** — `llvm/test/CodeGen/LoongArch/stack-probing-dynamic.ll`
+   - 读什么：`@dynamic` 的 `LA64` `CHECK` 序列，重点看循环前的目标栈顶计算、循环里的 `st.d $zero, $sp, 0` 和 `.cfi_def_cfa` 的变化。
+   - 学到什么：本章 10.4 用 `probe-stack-size=16` 举了一个静态 64 字节的例子；这份测试覆盖动态大小分配，能补上“循环边界由运行时 `%size` 决定”时 CFI 怎么摆。
+   - 前提：读过本章 10.4 的三种 `allocateStack()` 分支。
+
+4. **定位“这条 prologue 是谁生成的”** — `llvm/docs/DebuggingLLVM.md`
+   - 读什么：`## Understanding where an instruction came from`，特别是 `-print-mi-addrs`、`-print-after-all` 与条件断点的用法。
+   - 学到什么：本章 10.7 建议用 `-print-after=prologepilog` 观察 shrink-wrapping；当 prologue 的位置或 CFI 不对时，这一节给出从 MIR 指令地址回到 C++ 插入点的调试方法。
+   - 前提：有 assertions/debug 构建，或至少能用 `-print-after`。
+
+## 10.12 下一步
 
 下一章看代码模型与 TLS：`small`/`medium`/`large` 怎么影响 `la.pcrel`/`la.got` 的展开，`R_LARCH_*` 重定位怎么产生，以及 `localexec`/`initialexec`/`globaldynamic` 三种 TLS 模型的指令序列。

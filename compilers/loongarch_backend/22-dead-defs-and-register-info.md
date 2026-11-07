@@ -196,6 +196,28 @@ if (!isShiftedInt<14, 2>(FixedOffset)) {
 
 ---
 
-## 22.10 下一步
+## 22.10 延伸阅读
+
+1. **`getReservedRegs`/`eliminateFrameIndex` 的接口契约** — `llvm/docs/WritingAnLLVMBackend.md`
+   - 读什么：`Register Set and Register Classes` 下的 `Defining a Register Class`，以及 `Implement a subclass of TargetRegisterInfo` 小节列出的 `getReservedRegs`、`eliminateFrameIndex` 等 override
+   - 学到什么：本章 22.3/22.5 直接读 LoongArch 实现；这份后端教程补上这些 override 在 `TargetRegisterInfo` 里的通用职责：`getReservedRegs` 返回“不可分配物理寄存器的位集”，`eliminateFrameIndex` 负责消掉抽象帧索引。先有契约再看 `markSuperRegs` 与 `LDPTR → LD`，就不会只记住现象。
+   - 前提：知道物理寄存器编号与寄存器类；读过本章 22.3。
+
+2. **MIR 里的 `dead` 定义与物理寄存器写法** — `llvm/docs/MIRLangRef.md`
+   - 读什么：`Registers` 小节（`$name`/`%id`/`$noreg`）与 `Machine Operands` 的 `dead` 标志表格行（`RegState::Dead`，Unused definition）
+   - 学到什么：本章 22.1 的 `$zero` 现象在 MIR 里表现为 `dead $rX`/`dead $r0`；手册说明 `dead` 对应 `RegState::Dead`，并规定物理寄存器用 `$`、虚拟寄存器用 `%`。补上“在 MIR 里怎么确认一个 def 真的被标成 dead”，以及 22.2 的 `MO.isDead()` 是从哪来的。
+   - 前提：读过本章 22.2 的判定条件；知道 MIR 的基本 block 结构。
+
+3. **别名、空别名与寄存器类** — `llvm/lib/Target/LoongArch/LoongArchRegisterInfo.td`
+   - 读什么：`R0`–`R3`、`R21` 的 `def`（`R0` 的 `["zero"]`、`R2` 的 `["tp"]`、`R3` 的 `["sp"]`、`R21` 的空 `[""]`），以及 `GPR`/`GPRNoR0R1` 寄存器类
+   - 学到什么：本章 22.3 说“`markSuperRegs` 会连别名一起保留”；在 `.td` 层面，`a0` 只是 `R4` 的 `AltNames`，不是独立寄存器，而 `R21` 的 `AltNames` 为空，所以它没有 ABI 名。读源码时再对照 `markSuperRegs` 的注释与 `superregs_inclusive` 实现，能分清“别名”和“super-register”两种说法，也能解释 MIR 里通常写 `$r0` 而不是 `$zero`（后者是 AltName）。
+   - 前提：能读 `Register`/`RegisterClass` 的 TableGen 定义；读过本章 22.3。
+
+4. **帧偏移降级的回归用例** — `llvm/test/CodeGen/LoongArch/ldptr-stptr-frame-offset.ll`
+   - 读什么：文件头注释（`si14 << 2` 在选指时合法、帧布局后变成 FP 相对 `-977` 且不是 4 的倍数）与 `anyext_frame_offset` 的 `CHECK` 序列
+   - 学到什么：本章 22.5 用一段 switch 解释 `LDPTR → LD`；这个测试给出触发条件的具体数字：`alloca [3001 x i8]` 加 `gep +2048` 让最终 FP 相对偏移变成 `-977`，于是必须退到 `ld.w`。它还强调要做汇编 round-trip，因为 MachineVerifier 查不出所有目标立即数约束。补上“怎么构造这个 corner case、为什么只看 MIR 不够”。
+   - 前提：读过本章 22.5；知道 `ldptr.d` 的 `simm14 << 2` 与 `ld.d` 的 si12 差异。
+
+## 22.11 下一步
 
 下一章看调度模型与 `llvm-mca`：`SchedLA464.td`/`SchedLA664.td` 怎么写、`-mcpu=la664` 如何改变指令选择与调度、以及怎么用 `llvm-mca` 评估一段循环。

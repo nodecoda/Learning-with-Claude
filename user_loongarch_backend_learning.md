@@ -16,7 +16,7 @@ metadata:
   `LLVM_TARGETS_TO_BUILD='X86;AArch64;LoongArch' LLVM_ENABLE_PROJECTS='clang;lld' ./toolset/configure.sh ct-instr-trunk`
   重配，并补建 `llc llvm-mc llvm-objdump lld llvm-readobj yaml2obj FileCheck count not split-file llvm-as llvm-dis opt llvm-mca llvm-config clang`。
 - 文件结构：`README.md` + Ch 00–30（31 章）+ 练习 A–E + Final，共 38 篇。Part 0（00–03）树审计/全景/ISA/流水线；Part 1（04–08 + A）TableGen/MC；Part 2（09–12 + B）ABI/栈帧/TLS/链接；Part 3（13–17 + C）SelectionDAG/向量；Part 4（18–23 + D）机器 pass；Part 5（24–26 + E）Clang/运行时；Part 6（27–30 + Final）测试/调试/贡献/维护。
-- 当前进度（2026-11-08）：**全课完成**，38 篇 10,093 行。Ch 00–30 正文 + 练习 A–E + Final 全部带实测；无残留骨架。
+- 当前进度（2026-11-08）：**全课完成**，38 篇 11,595 行。Ch 00–30 正文 + 练习 A–E + Final 全部带实测；31 章均有 4 条「延伸阅读」，5 个练习均有 `<details>` 参考解答（共 24 个）；无残留骨架。
 - 新增实测（2026-11-08，可重跑）：
   - driver：`-###` 显示 LA64 默认 `+lsx +relax +64bit +f +d +ual` / `lp64d`；`-march=loongarch64` 不带 `+lsx`；`-march=generic-la64` 被前端拒绝（`valid target CPU values: loongarch32, loongarch64, la464, la664`），但 `llc -mcpu=generic-la64` 可用；`-march=native` 在 x86 主机解析成 `znver2`。
   - LA32 默认 `ilp32d` 但 feature 无 `+d` → 后端回退 feature-implied ABI，`__addsf3` 软浮点 + 两条 warning。

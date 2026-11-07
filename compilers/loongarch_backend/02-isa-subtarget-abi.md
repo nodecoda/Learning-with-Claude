@@ -398,6 +398,28 @@ warning: 'lp64f' has not been standardized
 
 ---
 
-## 2.12 下一步
+## 2.12 延伸阅读
+
+1. **ISA 手册里的指令格式与 GPR 模型** — `https://loongson.github.io/LoongArch-Documentation/LoongArch-Vol1-EN.html`（外部链接）
+   - 读什么：`1.2. Instruction formats` 的格式图、`2.1.2.1. General-purpose Registers`，以及 `2.2.1. Arithmetic Operation Instructions` 下 `add.w/d`、`addi.w/d`、`lu12i.w/lu32i.d/lu52i.d` 的小节。
+   - 学到什么：补本章只给 TableGen 名字、没展开的 ISA 侧定义：`rd/rj/rk` 的位域、GPR 的 32/64 位视图，以及大立即数为什么要 `lu12i.w + addi.d` 组合。
+   - 前提：能读 LoongArch 汇编；知道本章 2.1 的 LA32/LA64 区分。
+
+2. **DataLayout 字符串每个字段的语义** — `llvm/docs/LangRef.md`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：`### Data Layout` 整节，重点 `S<size>`、`p...:<size>:<abi>:<pref>` 与 `i<size>:<abi>[:<pref>]` 三套语法；再对照 `### Target Triple` 看 triple 如何影响默认 ABI。
+   - 学到什么：把 2.7 的 DataLayout 表从“抄下来的值”变成可解释的规则，尤其是栈对齐 128、指针宽度，以及 `i128:128:128` 这类条目如何套用 `i<size>` 规则。
+   - 前提：知道 `target datalayout` 在 IR 里的位置；读过本章 2.7。
+
+3. **Feature/CPU 表的原始定义** — `llvm/lib/Target/LoongArch/LoongArch.td`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：`Feature32S`、`Feature64Bit`、`Feature32Bit`、`FeatureExtLSX`、`FeatureExtLASX` 的依赖列表，以及 `ProcessorModel<"generic-la64", ...>`、`"loongarch64"`、`"la464"`、`"la664"` 四条。
+   - 学到什么：核对 2.2/2.3 的表不是二手总结；看清“LA64 隐含 32S”“generic-la64 带 LSX、loongarch64 不带”的依赖来源。
+   - 前提：能读 TableGen 的 `SubtargetFeature`/`ProcessorModel` 语法（可先看 `llvm/docs/TableGen/index.md` 的 Basic concepts）。
+
+4. **-march/-mcpu/-mattr 的选项语义** — `llvm/docs/CommandGuide/llc.md`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：`### End-user Options` 里的 `-march`、`-mcpu`、`-mtune`、`-mattr`、`-filetype` 几条，重点 `-mattr=+a,-b` 的写法。
+   - 学到什么：补 2.8 的“一条命令看全部”：知道 `-mattr` 只影响 codegen，不要把 `llvm-mc` 是否接受某条指令当成 feature 是否生效。
+   - 前提：跑过本章 2.8 的 `llc -mattr=+lasx` 对照实验。
+
+## 2.13 下一步
 
 下一章把“编译一次”拆成真实的 pass 序列：`llc -debug-pass=Structure` 的每一行是什么、`-stop-after` 停在哪、MIR 里怎么看 `PseudoLA_TLS_LE`。

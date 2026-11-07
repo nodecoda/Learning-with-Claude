@@ -282,6 +282,28 @@ llc -mtriple=loongarch64 -run-pass=loongarch-late-branch-opt f.mir -o -
 
 ---
 
-## 28.13 下一步
+## 28.13 延伸阅读
+
+1. **从真实 clang 命令定位 pass** — `llvm/docs/DebuggingLLVM.md`
+   - 读什么：`## Extract and rerun the compile command`、`## Understanding the source of the issue`、`## Understanding where an instruction came from`。
+   - 学到什么：本章从 `llc` 出发；这份文档补上如何从构建系统抓到真实 clang 命令、用 pass-by-pass 打印定位、以及用 `-print-mi-addrs` 配合调试器回溯到创建 `MachineInstr` 的 C++ 位置。28.9 只走到“读 pass 判定条件”，这里补上“定位到具体构造点”。
+   - 前提：读过 28.3–28.7；有 debug/assertions 构建。
+
+2. **MIR 的测试指南与语法** — `llvm/docs/MIRLangRef.md`
+   - 读什么：`## MIR Testing Guide` 的 `### Testing Individual Code Generation Passes`、`#### Simplifying MIR files`，以及 `## Machine Instructions Format Reference` 的 `### Registers`、`### Machine Instructions`、`### Machine Operands`。
+   - 学到什么：解释 28.8 的四个坑为什么成立（`$r0` 不是 `$zero`、opcode 用大写伪指令名、`name:` 必填），并学会用 `-run-pass` 所需的最小 MIR 写法。这里还补上“先简化真实 MIR，再手写”的方法。
+   - 前提：读过 28.3–28.4、28.8。
+
+3. **MIR 背后的对象模型** — `llvm/docs/CodeGenerator.md`
+   - 读什么：`## Machine code description classes` 下的 MachineInstr、MachineBasicBlock、MachineFunction 三个类小节，以及 `#### Machine code in SSA form`。
+   - 学到什么：读 MIR 时知道 `liveins`、successors、虚拟寄存器、SSA 属性分别对应哪个 C++ 对象；也能解释为什么 `-stop-after` 的输出可以直接作为 `-run-pass` 输入。28.3 只讲了命令，这里补上数据模型。
+   - 前提：读过 28.3–28.5；对 `MachineFunction` 有基本印象（Ch 03）。
+
+4. **`-debug-only` 为什么在 release 里失效** — `llvm/docs/CommandLine.md`
+   - 读什么：`### Internal vs External Storage` 中 `LLVM_DEBUG` 宏的定义，以及 `DebugFlag` 通过 `cl::location` 绑定的例子；再扫一眼 `### Option Attributes` 里的 `cl::Hidden`。
+   - 学到什么：`-debug-only` 的输出依赖 `LLVM_DEBUG`，而该宏在 `NDEBUG` 下被编译成空；这解释了 28.7 的“必须 assertions 构建”。读完能区分“选项存在”和“输出被编译掉”两件事。
+   - 前提：读过 28.7；知道 release 与 assertions 构建的区别。
+
+## 28.14 下一步
 
 工具齐了，下一章用它们复盘本树唯一的那个提交：从 issue #239812 到 `lld/ELF/Arch/LoongArch.cpp` 的 24 行修复，以及 commit message / PR 该怎么写。

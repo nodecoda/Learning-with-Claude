@@ -255,6 +255,28 @@ $T/bin/llvm-lit -q $R/lld/test/ELF --filter=loongarch
 
 ---
 
-## 27.11 下一步
+## 27.11 延伸阅读
+
+1. **官方 regression test 结构** — `llvm/docs/TestingGuide.md`
+   - 读什么：`## Regression test structure` 下的 `### Writing new regression tests`、`### Generating assertions in regression tests`、`### Best practices for regression tests`、`### Constraining test execution`。
+   - 学到什么：本章的 RUN/CHECK 骨架只是最小形态；官方指南补上 `REQUIRES`/`UNSUPPORTED` 的使用、测试命名、fragile test 的取舍，以及自动生成断言脚本的边界。读完能把 27.1 的 `lit.local.cfg` 和 27.3 的 `update_llc_test_checks.py` 放回完整测试规范里。
+   - 前提：读过 27.1–27.3，跑过至少一个 `llvm-lit` 用例。
+
+2. **lit 的选择器与本地配置** — `llvm/docs/CommandGuide/lit.md`
+   - 读什么：`## SELECTION OPTIONS` 的 `--filter`/`--filter-out`/`--filter-failed`、`## OUTPUT OPTIONS` 的 `--show-tests`/`--show-used-features`，以及 `## LIT INFRASTRUCTURE` 的 `### LOCAL CONFIGURATION FILES`。
+   - 学到什么：精确控制“跑哪些用例”、用 `--show-used-features` 查看 `REQUIRES`/`UNSUPPORTED` 声明了哪些 feature，并理解 `lit.local.cfg` 的发现顺序。本章 27.7 只给了命令，这里补上 lit 的发现模型，能解释为什么“全绿”可能意味着整目录没跑。
+   - 前提：用过 `llvm-lit`；读过 27.1、27.7。
+
+3. **FileCheck 的前缀与顺序约束** — `llvm/docs/CommandGuide/FileCheck.md`
+   - 读什么：`### The FileCheck -check-prefixes option`、`### The "CHECK-NEXT:" directive`、`### The "CHECK-LABEL:" directive`、`### The "CHECK-DAG:" directive`。
+   - 学到什么：本章双 triple 测试为什么用 `CHECK,LA32`/`CHECK,LA64`；什么时候该用 `NEXT` 锁指令顺序、什么时候用 `DAG` 容忍调度变化。27.2 只说了“双前缀”，这里补上匹配语义和误用后果。
+   - 前提：读过 27.2、27.4。
+
+4. **MC 测试里的 relax 序列** — `llvm/test/MC/LoongArch/Relocations/`
+   - 读什么：目录下的 `relax-tls-le.s`、`relax-align.s`、`relax-attr.s`，重点看 `# RUN:` 行如何组合 `llvm-mc` 与 `llvm-readobj`/`llvm-objdump`，以及汇编输入里 `R_LARCH_RELAX` 的出现位置。
+   - 学到什么：看清汇编器实际把 marker 放在配对重定位之后，这解释了 27.5 为什么 lld 的顺序 bug 只能用 `yaml2obj` 构造；同时补上“MC 测试如何同时锁编码与重定位”的写法。本章只列了目录名，这里补上具体文件。
+   - 前提：读过 27.4–27.5，知道 `llvm-mc` 的 `-show-encoding`/`-filetype=obj` 用法。
+
+## 27.12 下一步
 
 会写测试之后，下一个问题是“测试挂了怎么查”。下一章是纯调试手册：`-stop-before/-stop-after`、`-run-pass`、`-print-after`、`-stats`、`-debug-only`，以及手写 MIR 时的那几个坑。

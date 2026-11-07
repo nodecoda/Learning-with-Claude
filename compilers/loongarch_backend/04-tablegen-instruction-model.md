@@ -358,12 +358,34 @@ add.d $a0, $a1, $a2   # encoding: [0xa4,0x98,0x10,0x00]
 ## 4.12 练习
 
 1. 手算 `sub.d $a3,$a4,$a5` 的 32 位编码，再用 `llvm-mc -show-encoding` 验证。
-2. 在 `/tmp` 里复制一份 `LoongArchInstrInfo.td`，把 `ADD_D` 的 opcode 改成 `0x00108001`，重新生成 `-gen-instr-info`，观察 `ADD_D` 的 opcode 编号和编码是否变化（不要改真实树）。
+2. 在 `/tmp` 里复制一份 `LoongArchInstrInfo.td`，把 `ADD_D` 的 opcode 改成 `0x00280000`（一个未使用的合法槽位；低 15 位必须为 0，改 `0x00108001` 会被 `rd` 字段覆盖），重新生成 `-gen-instr-info`，观察 `ADD_D` 的 opcode 编号和编码是否变化（不要改真实树）。
 3. 找出 `ADDI_D` 的 pattern（`PatGprImm<add, ADDI_D, simm12>`），解释为什么 `add i64 %a, 100` 选 `ADDI_D`，而 `add i64 %a, 100000` 可能选 `LU12I_W + ADD_D`。
 4. 用 `-print-before=loongarch-isel` 看 `ISD::ADD` 的操作数类型，确认 `GPR` 在 LA32/LA64 下分别是 `i32`/`i64`。
 
 ---
 
-## 4.13 下一步
+## 4.13 延伸阅读
+
+1. **class/def/let/multiclass 的精确语义** — `llvm/docs/TableGen/ProgRef.md`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：`### class`、`### def`、`### let`、`### multiclass`、`### defm` 五节，以及 `### Directed acyclic graphs (DAGs)`。
+   - 学到什么：补 4.1–4.5 用到但没解释的语言机制：`class` 参数如何变成字段、`let` 覆盖什么、`Pat<(OpNode ...), (Inst ...)>` 里的 DAG 值如何表示。
+   - 前提：能读 `LoongArchInstrFormats.td` 的 `class Fmt3R<...>` 声明（本章 4.3）。
+
+2. **每个 generator 到底产出什么** — `llvm/docs/TableGen/BackEnds.md`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：`### InstrInfo`、`### CodeEmitter`、`### DAGISel`、`### AsmWriter`、`### AsmMatcher`、`### Disassembler`、`### PseudoLowering` 七个小节。
+   - 学到什么：把 4.7 的生成物地图和 backend 名称对上，知道 `LoongArchGenDAGISel.inc`、`GenInstrInfo.inc`、`GenAsmMatcher.inc` 分别是哪段 TableGen 生成的。
+   - 前提：知道 `.td` 本身不产生可执行代码，必须经 `llvm-tblgen`（本章 4.7）。
+
+3. **InstrInfoEmitter 内部怎么把记录变成 C++** — `compilers/tablegen_internals/README.md`（路径相对 /home/ubuntu/Learning-with-Claude）
+   - 读什么：`Part 1 — 数据模型：Record 与 Init（Ch 4–8）` 的 Ch 4–5，以及 `Part 3 — Backend 工程（Ch 13–17）` 的 Ch 17 `InstrInfoEmitter` 走读。
+   - 学到什么：补本章没展开的生成器视角：`ADD_D` 的字段如何变成 opcode 枚举与 `MCInstrDesc`，以及为什么插入一个 `def` 会让后面的 opcode 整体平移。
+   - 前提：读过本章 4.2–4.4，知道 `LAInst`/`Fmt3R`/`ALU_3R` 的继承关系。
+
+4. **位域与 opcode 的原始定义** — `llvm/lib/Target/LoongArch/LoongArchInstrFormats.td`（路径相对 /home/ubuntu/llvm/trees/ct-instr-trunk）
+   - 读什么：`class LAInst`、`class Fmt3R`、`class Fmt3RI2`、`class Fmt3RI3` 的字段与 `Inst{...}` 赋值，再对照 `LoongArchInstrInfo.td` 里 `ADD_D`/`ADDI_D` 的 `def`。
+   - 学到什么：确认 4.3/4.4 的位域不是讲义简化；看清 `Fmt3R` 先由 `op` 整体写入 32 位，再用 `rk/rj/rd` 覆盖低位字段。
+   - 前提：知道 `bits<32> Inst` 与 TableGen 位域切片语法（本章 4.2–4.3）。
+
+## 4.14 下一步
 
 下一章看寄存器与调用约定：`GPR`/`FPR`/`CFR` 的层级、callee-saved 集合，以及它们如何决定 prologue 里存哪些寄存器。

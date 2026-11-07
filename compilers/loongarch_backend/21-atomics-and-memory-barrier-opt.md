@@ -199,6 +199,28 @@ LL/SC 循环有一个硬要求：**`ll` 和 `sc` 之间不能有让循环无法�
 
 ---
 
-## 21.8 下一步
+## 21.8 延伸阅读
+
+1. **原子语义与 codegen 契约** — `llvm/docs/Atomics.md`
+   - 读什么：`Atomic orderings` 里的 Acquire/Release/AcquireRelease/SequentiallyConsistent 四小节，以及 `Atomics and Codegen` 整节
+   - 学到什么：本章 21.1 从反汇编倒推四种实现；这份文档补上正向契约：为什么 `cmpxchg`/`atomicrmw` 可以建在 LL/SC 或 AMO 上、为什么“某尺寸支持任一 lock-free 原子操作，就必须支持该尺寸全部操作”，以及 `AtomicExpandPass` 可以在 IR 或“RA 之后很晚”展开 LL/SC 循环。最后一点正是本章 21.3 的官方理由。
+   - 前提：知道 `seq_cst`/`acquire`/`release` 的基本含义；读过本章 21.1。
+
+2. **`cmpxchg` 的成败内存序与对齐约束** — `llvm/docs/LangRef.md`
+   - 读什么：`cmpxchg` 指令小节的 Syntax/Arguments/Semantics，以及 `atomicrmw`、`fence` 两小节
+   - 学到什么：本章 21.1 只展示 `cmpxchg ... seq_cst seq_cst`；LangRef 说明 success/failure 两个 ordering 可以不同，failure 不能是 `release`/`acq_rel`，且对齐不足时原子操作可能要靠锁、性能会差。补上“同一个 `cmpxchg` 为什么可能生成不同的 `dbar` 掩码”，以及写测试时内存序参数该怎么选。
+   - 前提：读过本章 21.1 的 LL/SC 展开；能读 LangRef 的语法行。
+
+3. **屏障合并的正反例与第三个开关** — `llvm/test/CodeGen/LoongArch/memory-barrier-opt.ll`
+   - 读什么：四条 `RUN`（默认、`--loongarch-require-no-path-bypass=false`、`--loongarch-merge-amo-with-dbar=false`、`--loongarch-replace-eliminated-dbar-to-nop=true`）与 `dbar_acquire_acquire` 等函数的 `NORMAL`/`BYPASS`/`NOMAMO`/`BTONOP` 检查
+   - 学到什么：本章 21.2 只列了两个开关；这个测试还覆盖 `replace-eliminated-dbar-to-nop`，并展示 `dbar 20`、`dbar 16` 等不同掩码。补上“七条规则各自的回归用例长什么样”，以及关掉某个开关后预期保留几条屏障；这比只背规则表更容易发现合并条件写错。
+   - 前提：读过本章 21.2 的七条规则表；会用 `--check-prefix` 读多配置测试。
+
+4. **128 位 CAS 的展开结构** — `llvm/lib/Target/LoongArch/LoongArchExpandAtomicPseudoInsts.cpp`
+   - 读什么：`expandAtomicCmpXchg()`（`:499`）与 `expandAtomicCmpXchg128()`（`:639`）的函数体，重点看后者 `ll.d` + `dbar 0b10100` + `ld.d` 读高低半、再用 `sc.q` 写回的注释与 `BuildMI` 序列
+   - 学到什么：本章 21.3 说“原子伪指令拖到最后”；源码补上展开器如何真的构造 LL/SC 循环：新建 loop head/tail/tail/done 四个 MBB、`bne` 退出、`beqz scratch` 重试。128 位不是“两次独立 64 位 CAS”，而是 `ll.d` 锁低半、`dbar` 后 `ld.d` 读高半、`sc.q` 条件写回——这是本章练习 4 的答案线索。
+   - 前提：读过本章 21.1 的 `cmpxchg` 反汇编与 21.3 的 pass 时机；知道 `sc.q` 是 128 位条件存储。
+
+## 21.9 下一步
 
 下一章看 `DeadRegisterDefinitions` 与寄存器信息：哪些定义是“死”的、`getReservedRegs` 保留了什么、以及 `CalleeSavedRegs` 如何与 ABI 对齐。
