@@ -64,7 +64,7 @@
   - Triton 3.9.0 源码深潜：Python AST → TTIR/TTGIR → LLVM/PTX/SASS → launch，34 章 + 5 练习 + 全栈扩展 final（41 篇 19.4k 行）；T4 上真跑 IR/PTX 与计数，sm_80+ 标 guided；目标能修改并维护 Triton，简体中文
 
 - [loongarch_backend](./compilers/loongarch_backend/README.md)
-  - LLVM 24 龙芯 LoongArch 全栈：树审计/ISA/Feature/ABI → TableGen/MC → SelectionDAG/LSX/LASX → 机器 pass → Clang/builtins → LLD 重定位/relaxation → 上游 PR；31 章 + 5 练习 + PR-ready final，以 ct-instr-trunk 与 #239812 为基线，简体中文
+  - LLVM 24 龙芯 LoongArch 全栈：树审计/ISA/Feature/ABI → TableGen/MC → SelectionDAG/LSX/LASX → 机器 pass → Clang/builtins/compiler-rt → LLD 重定位/relaxation → 上游 PR；31 章 + 5 练习 + PR-ready final（38 篇 10.1k 行），以 ct-instr-trunk 与 #239812 为基线，端到端跑通 clang→ld.lld→qemu，简体中文
 
 ### dev_tools/
 

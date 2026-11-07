@@ -16,7 +16,16 @@ metadata:
   `LLVM_TARGETS_TO_BUILD='X86;AArch64;LoongArch' LLVM_ENABLE_PROJECTS='clang;lld' ./toolset/configure.sh ct-instr-trunk`
   重配，并补建 `llc llvm-mc llvm-objdump lld llvm-readobj yaml2obj FileCheck count not split-file llvm-as llvm-dis opt llvm-mca llvm-config clang`。
 - 文件结构：`README.md` + Ch 00–30（31 章）+ 练习 A–E + Final，共 38 篇。Part 0（00–03）树审计/全景/ISA/流水线；Part 1（04–08 + A）TableGen/MC；Part 2（09–12 + B）ABI/栈帧/TLS/链接；Part 3（13–17 + C）SelectionDAG/向量；Part 4（18–23 + D）机器 pass；Part 5（24–26 + E）Clang/运行时；Part 6（27–30 + Final）测试/调试/贡献/维护。
-- 当前进度（2026-11-07）：Ch 00（树审计）+ Ch 01（后端全景）+ Ch 02（ISA/Subtarget/ABI）+ Ch 03（流水线与 MIR）已写完并带实测；Ch 04–30、练习 A–E、Final 为待填骨架。
+- 当前进度（2026-11-08）：**全课完成**，38 篇 10,093 行。Ch 00–30 正文 + 练习 A–E + Final 全部带实测；无残留骨架。
+- 新增实测（2026-11-08，可重跑）：
+  - driver：`-###` 显示 LA64 默认 `+lsx +relax +64bit +f +d +ual` / `lp64d`；`-march=loongarch64` 不带 `+lsx`；`-march=generic-la64` 被前端拒绝（`valid target CPU values: loongarch32, loongarch64, la464, la664`），但 `llc -mcpu=generic-la64` 可用；`-march=native` 在 x86 主机解析成 `znver2`。
+  - LA32 默认 `ilp32d` 但 feature 无 `+d` → 后端回退 feature-implied ABI，`__addsf3` 软浮点 + 两条 warning。
+  - `-mabi=lp64f`：`-fsyntax-only` 0 条、`-S` 2 条、`-c` 3 条 warning（`LoongArchBaseInfo.cpp:43/100`）。
+  - builtins：三个 `.def` 58/959/1007 行；`__builtin_lsx_vadd_w` → `llvm.loongarch.lsx.vadd.w`，`v4i32` 在 ABI 上是 `i128`；`-mno-lsx` → `needs target feature lsx`；`dbar(32768)`/`csrrd_d(16384)` 立即数范围错误。
+  - compiler-rt：本构建 `lib/clang/24` 只有 `include`，无 `libclang_rt`；`loongarch_SOURCES = loongarch/fp_mode.c + GENERIC_SOURCES + GENERIC_TF_SOURCES`（26 个 tf 文件）；`fp_mode.c` 实测反汇编 `movfcsr2gr`/`bstrpick.d`/`ldx.bu`。
+  - lit 基线：CodeGen LoongArch 978、MC 335、lld loongarch 48、clang CodeGen/LoongArch 48、clang Driver loongarch 28。
+  - 端到端：`clang --sysroot=/opt/loongarch64-cross/target -B<gcc dir> -L<gcc dir> -fuse-ld=lld` → qemu `exit=0`；TLS LE `.o` 3 对 `R_LARCH_RELAX`，最终 ELF 收缩为 `addi.d $a0,$tp,0; ret`；LSX `-march=la464` 向量输出 `11 22 33 44`。
+  - MIR：`-run-pass=loongarch-late-branch-opt` 折 `BEQ $r4,$r4`→`PseudoBR`，不折 `BEQ $r4,$r0`；`dead-defs` 只改写 load/store（`dead $r0 = LD_D`），跳过 `ADD_W`；`merge-base-offset` 在 `-relocation-model=static` + `dso_local` 下把 `ADDI_D` 折进 `LD_D`。
 - 关键实测（可重跑）：
   - `llc --version` 有 `loongarch32/loongarch64`；`llvm-config --targets-built` = `X86 AArch64 LoongArch`。
   - `llvm-lit -s -j 24 lld/test/ELF --filter loongarch` → 48 passed。

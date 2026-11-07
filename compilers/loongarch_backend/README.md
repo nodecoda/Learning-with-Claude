@@ -88,19 +88,19 @@
 - [Ch 21 原子操作与内存屏障优化](./21-atomics-and-memory-barrier-opt.md)：`ExpandAtomicPseudoInsts`、`dbar`、`MemoryBarrierOpt`
 - [Ch 22 DeadRegisterDefinitions 与寄存器信息](./22-dead-defs-and-register-info.md)：`$r0` 写、`eliminateFrameIndex`、spill/restore
 - [Ch 23 调度模型与 llvm-mca](./23-scheduling-models-and-mca.md)：`SchedWrite`/`SchedRead`、LA464/LA664、资源压力
-- [练习 D：写一个机器 peephole](./practice-d-machine-passes.md)：用 MIR 锁定行为，再改 pass
+- [练习 D：用 MIR 驱动机器 pass](./practice-d-machine-passes.md)：`-run-pass` 实测 LateBranchOpt / DeadRegisterDefinitions / MergeBaseOffset，含手写 MIR 的四个坑
 
 ### Part 5 — Clang 与运行时（Ch 24–26 + 练习 E）
 
 - [Ch 24 Clang Driver](./24-clang-driver.md)：`-march`/`-mabi`/`-mfpu`、默认 ABI、multilib、`--target`
 - [Ch 25 Clang TargetInfo 与 Builtins](./25-clang-targetinfo-and-builtins.md)：宏、类型、LSX/LASX/LBT builtins、Sema 检查
 - [Ch 26 compiler-rt 与运行时](./26-compiler-rt-and-runtimes.md)：builtins、sanitizer、xray、libunwind 的 LoongArch 支持面
-- [练习 E：一个 builtin 的端到端](./practice-e-clang-end-to-end.md)：从 `__builtin_loongarch_*` 到 IR intrinsic 到汇编
+- [练习 E：端到端工具链](./practice-e-clang-end-to-end.md)：clang → `.o` → `ld.lld` → qemu；TLS LE 从 3 条指令收缩到 1 条，LSX 向量真实运行
 
 ### Part 6 — 测试、调试与贡献（Ch 27–30 + Final）
 
 - [Ch 27 lit 测试与 update 脚本](./27-lit-testing-and-update-scripts.md)：CodeGen/MC/LLD 三类测试、`update_llc_test_checks.py`、`yaml2obj`
-- [Ch 28 调试 CodeGen](./28-debugging-codegen.md)：`-debug-pass=Structure`、`-stop-after`、`-view-dag`、`llvm-reduce`
+- [Ch 28 调试 CodeGen](./28-debugging-codegen.md)：`-debug-pass=Structure`、`-stop-after`/`-run-pass`、`-print-after`、`-stats`、`-debug-only`、手写 MIR 四坑
 - [Ch 29 上游贡献流程](./29-contribution-workflow.md)：issue → 复现 → 修复 → 测试 → PR → review，以 #239812 为例
 - [Ch 30 维护者视角](./30-maintainership-and-triage.md)：review 关注点、回归策略、release notes、triage
 - [Final Project](./final-project-loongarch-contribution.md)：独立完成一个可提交上游的 LoongArch 修复或小特性
@@ -164,5 +164,12 @@ ls -l $T/bin/ld.lld                              # -> lld
 
 ## 当前进度
 
-- 2026-11-07：Ch 00（树审计）、Ch 01（后端全景）、Ch 02（ISA/Subtarget/ABI）、Ch 03（流水线与 MIR）、Ch 04（TableGen 建模）、Ch 05（寄存器/调用约定）、Ch 06（编码与 MC）、Ch 07（汇编/反汇编/打印）、Ch 08（常量物化）、练习 A 完成。待填：Ch 09–30、练习 B–E、Final。
-- 基线构建已补齐 `LoongArch` + `lld`；验证记录见 Ch 00。
+- 2026-11-08：**全课完成**。Ch 00–30 正文、练习 A–E、Final Project 全部写完，共 37 篇。
+- Part 0（Ch 00–03）：树审计、后端全景、ISA/Subtarget/ABI、流水线与 MIR。
+- Part 1（Ch 04–08 + 练习 A）：TableGen、寄存器/CC、MC 编码、asm 往返、常量物化。
+- Part 2（Ch 09–12 + 练习 B）：CC lowering、栈帧、代码模型/TLS、lld relocation 与 relaxation。
+- Part 3（Ch 13–17 + 练习 C）：合法化、选指 pattern、自定义 lowering/intrinsic、DAG combine、LSX/LASX。
+- Part 4（Ch 18–23 + 练习 D）：伪指令三层、MergeBaseOffset/OptWInstrs、MachineCombiner/LateBranchOpt、原子/屏障、死定义、调度模型/llvm-mca。
+- Part 5（Ch 24–26 + 练习 E）：clang driver、builtin/TargetInfo、compiler-rt 与 runtimes。
+- Part 6（Ch 27–30 + Final）：lit/update 脚本、调试手册、#239812 贡献复盘、triage 与维护。
+- 基线构建已补齐 `LoongArch` + `lld`；验证记录见 Ch 00。所有“实测”输出均来自本树与 `builds/ct-instr-trunk`；未执行的部分（如 compiler-rt 自建）在正文中显式标注“未实测”。
