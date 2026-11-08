@@ -65,6 +65,8 @@
 
 - [loongarch_backend](./compilers/loongarch_backend/README.md)
   - LLVM 24 龙芯 LoongArch 全栈：树审计/ISA/Feature/ABI → TableGen/MC → SelectionDAG/LSX/LASX → 机器 pass → Clang/builtins/compiler-rt → LLD 重定位/relaxation → 上游 PR；31 章 + 5 练习 + PR-ready final（38 篇 10.1k 行），以 ct-instr-trunk 与 #239812 为基线，端到端跑通 clang→ld.lld→qemu，简体中文
+- [riscv_maintenance](./compilers/riscv_maintenance/README.md)
+  - LLVM 24 RISC-V 上游维护与贡献：树审计 → 扩展/Subtarget → TableGen/MC → ABI/栈帧/TLS/LLD → SelectionDAG/RVV → 机器 pass → Clang/builtins → lit/调试/贡献流程；32 章 + 5 练习 + PR-ready final（39 篇 21,284 行），以 ct-instr-trunk 的 analysis/riscv-maintenance 分支为基线，所有实验在 X86;AArch64;RISCV 构建上真跑，简体中文
 
 ### dev_tools/
 

@@ -11,3 +11,4 @@
 - [Project: tablegen_internals course scope](user_tablegen_internals_learning.md) — LLVM 24 TableGen 源码深潜：23 章 + 4 練習 + 可合併 backend final；拆 lib/TableGen 实现，目標能改源碼並參與上游；已完成 (2026-10-29)，29 篇 13,590 行
 - [Project: triton_source_deep_dive course scope](user_triton_source_deep_dive_learning.md) — Triton 3.9.0 源码深潜：34 章 + 5 练习 + 全栈 final；Python AST → TTIR/TTGIR → LLVM/PTX/SASS；目标能改并维护 Triton；已完成 (2026-11-04)，41 篇 19,453 行
 - [Project: loongarch_backend course scope](user_loongarch_backend_learning.md) — LLVM 24 LoongArch 全栈：树审计/ISA/ABI/TableGen/MC/SelectionDAG/机器 pass/Clang/LLD/上游贡献，31 章 + 5 练习 + PR-ready final；已完成 (2026-11-08)，38 篇 11,595 行；31 章延伸阅读 + 5 练习折叠解答
+- [Project: riscv_maintenance course scope](user_riscv_maintenance_learning.md) — LLVM 24 RISC-V 上游维护与贡献：32 章 + 5 练习 + PR-ready final；以 ct-instr-trunk 的 analysis/riscv-maintenance 分支与 X86;AArch64;RISCV 构建为基线；已完成 (2026-11-08)，39 篇 21,284 行
