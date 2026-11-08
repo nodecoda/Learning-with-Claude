@@ -70,6 +70,8 @@
 
 - [mlir_maintenance](./compilers/mlir_maintenance/README.md)
   - LLVM 24 MLIR 上游维护与贡献：树审计/构建/lit → 核心 IR 不变量 → Pass/Pattern/Analysis → ODS/方言演化 → Conversion/Bufferization → Linalg/OpenMP/GPU → 测试/PR/贡献地图；32 章 + 5 练习 + PR-ready final（39 篇），以 ct-instr-trunk 的 analysis/mlir-maintenance 分支为基线，所有实验在 clang;lld;mlir 构建上真跑，简体中文
+- [llvm_lit](./compilers/llvm_lit/README.md)
+  - LLVM 24 lit 深潜：从一条 RUN 行到 llvm/utils/lit 源码，覆盖发现/配置/shell/directives/替换/并行/报告/诊断，26 章 + 4 练习 + 可发布框架 final（32 篇 15,483 行）；完全零基础可读，全部关键输出本机真跑，简体中文；已完成 (2026-11-08)
 
 ### dev_tools/
 
