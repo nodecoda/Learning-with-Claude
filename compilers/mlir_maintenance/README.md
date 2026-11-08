@@ -156,7 +156,7 @@ $T/bin/llvm-lit -sv mlir/test/Conversion/ArithToLLVM/
 | 阶段 | 内容 | 状态 |
 |---|---|---|
 | 环境 | 分支、MLIR 构建、冒烟 | ✅ 完成 |
-| 基线 | 全量 `mlir/test` lit | ✅ 4,947 发现 / 4,303 通过 / 643 unsupported / 1 XFAIL / 0 failed（43.16s） |
+| 基线 | 全量 `mlir/test` lit | ✅ 4,947 发现 / 4,303 通过 / 643 unsupported / 1 XFAIL / 0 failed（43.4s） |
 | 骨架 | README + 38 个章节文件 | ✅ 完成 |
 | 正文 | 32 章 + 5 练习 + Final | ⏳ 待写 |
 
@@ -165,7 +165,7 @@ $T/bin/llvm-lit -sv mlir/test/Conversion/ArithToLLVM/
 - worktree：`/home/ubuntu/llvm/trees/ct-instr-trunk`，分支 `analysis/mlir-maintenance`，HEAD `e44fff5decc7`。
 - 构建：`builds/ct-instr-trunk`，`X86;AArch64;RISCV`，`clang;lld;mlir`，assertions ON，shared libs。
 - 方言：`mlir-opt --show-dialects` 实测 **50** 个。
-- lit：`mlir/test` 发现 **4,947** 个测试，`4,303` 通过、`643` unsupported、`1` expectedly failed、**0 failed**（43.16s，`-j16`）。首轮 105 个失败均为缺附属工具（exit 127）；补建 `check-mlir-build-only` 后剩 9 个，全部由 `MLIR_ENABLE_PDL_IN_PATTERNMATCH=0` 缓存导致，打开后归零。
+- lit：`mlir/test` 发现 **4,947** 个测试，`4,303` 通过、`643` unsupported、`1` expectedly failed、**0 failed**（43.4s，`-j16`）。首轮 105 个失败均为缺附属工具（exit 127）；补建 `check-mlir-build-only` 后剩 9 个，全部由 `MLIR_ENABLE_PDL_IN_PATTERNMATCH=0` 缓存导致，打开后归零。
 - 额外缓存修正：`cmake -DMLIR_ENABLE_PDL_IN_PATTERNMATCH=ON`（只改这一项，其余仍由 `toolset/configure.sh` 生成），再 `ninja mlir-opt` 实测增量 **14 分 48 秒 / 5,188 条边**。
 
 ### 质量约定
