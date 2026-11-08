@@ -151,14 +151,100 @@ $T/bin/llvm-lit -sv mlir/test/Conversion/ArithToLLVM/
 
 ## 当前进度
 
-**状态：骨架已建立，Ch 00–31 + 练习 A–E + Final 的目录已定；正文待填。**
+**状态：✅ 全课完成。39 篇（README + 32 章 + 5 练习 + Final），正文合计 20,199 行。**
 
 | 阶段 | 内容 | 状态 |
 |---|---|---|
 | 环境 | 分支、MLIR 构建、冒烟 | ✅ 完成 |
 | 基线 | 全量 `mlir/test` lit | ✅ 4,947 发现 / 4,303 通过 / 643 unsupported / 1 XFAIL / 0 failed（43.4s） |
 | 骨架 | README + 38 个章节文件 | ✅ 完成 |
-| 正文 | 32 章 + 5 练习 + Final | ⏳ 待写 |
+| 正文 | 32 章 + 5 练习 + Final | ✅ 20,199 行，每章 ≥5 处真实实验 |
+
+### 正文清单（实测行数）
+
+**Part 0 — 树审计、构建、所有权**（4 篇，1,995 行）
+
+| 文件 | 行数 |
+|---|---|
+| [`00-tree-audit-mlir-branch.md`](./00-tree-audit-mlir-branch.md) | 465 |
+| [`01-mlir-in-llvm-map.md`](./01-mlir-in-llvm-map.md) | 524 |
+| [`02-build-and-test-matrix.md`](./02-build-and-test-matrix.md) | 503 |
+| [`03-maintainers-and-churn.md`](./03-maintainers-and-churn.md) | 503 |
+
+**Part 1 — 核心 IR 不变量**（6 篇，3,213 行）
+
+| 文件 | 行数 |
+|---|---|
+| [`04-ir-object-model.md`](./04-ir-object-model.md) | 560 |
+| [`05-types-attributes-storage.md`](./05-types-attributes-storage.md) | 514 |
+| [`06-properties-and-bytecode.md`](./06-properties-and-bytecode.md) | 503 |
+| [`07-verifier-and-diagnostics.md`](./07-verifier-and-diagnostics.md) | 507 |
+| [`08-modifying-ir-safely.md`](./08-modifying-ir-safely.md) | 530 |
+| [`practice-a-ir-pass-pattern.md`](./practice-a-ir-pass-pattern.md) | 599 |
+
+**Part 2 — Pass / Pattern / Analysis**（6 篇，3,159 行）
+
+| 文件 | 行数 |
+|---|---|
+| [`09-pass-manager-and-analysis.md`](./09-pass-manager-and-analysis.md) | 532 |
+| [`10-rewrite-patterns-and-canonicalize.md`](./10-rewrite-patterns-and-canonicalize.md) | 495 |
+| [`11-dataflow-and-analyses.md`](./11-dataflow-and-analyses.md) | 560 |
+| [`12-dialect-interfaces.md`](./12-dialect-interfaces.md) | 494 |
+| [`13-debugging-and-reduction.md`](./13-debugging-and-reduction.md) | 480 |
+| [`practice-b-analysis-interface.md`](./practice-b-analysis-interface.md) | 598 |
+
+**Part 3 — ODS / TableGen / 方言**（6 篇，3,115 行）
+
+| 文件 | 行数 |
+|---|---|
+| [`14-ods-and-generated-code.md`](./14-ods-and-generated-code.md) | 497 |
+| [`15-assembly-format-parser-printer.md`](./15-assembly-format-parser-printer.md) | 525 |
+| [`16-traits-and-verifiers.md`](./16-traits-and-verifiers.md) | 522 |
+| [`17-custom-types-attributes.md`](./17-custom-types-attributes.md) | 486 |
+| [`18-dialect-registration-and-versioning.md`](./18-dialect-registration-and-versioning.md) | 488 |
+| [`practice-c-ods-dialect-evolution.md`](./practice-c-ods-dialect-evolution.md) | 597 |
+
+**Part 4 — Conversion / Bufferization**（6 篇，3,255 行）
+
+| 文件 | 行数 |
+|---|---|
+| [`19-conversion-target-legality.md`](./19-conversion-target-legality.md) | 485 |
+| [`20-type-converter.md`](./20-type-converter.md) | 556 |
+| [`21-dynamic-legality-and-casts.md`](./21-dynamic-legality-and-casts.md) | 557 |
+| [`22-bufferization.md`](./22-bufferization.md) | 500 |
+| [`23-lowering-to-llvm-and-beyond.md`](./23-lowering-to-llvm-and-beyond.md) | 558 |
+| [`practice-d-conversion-bufferization.md`](./practice-d-conversion-bufferization.md) | 599 |
+
+**Part 5 — 真实子系统**（6 篇，3,223 行）
+
+| 文件 | 行数 |
+|---|---|
+| [`24-linalg-tensor-vector.md`](./24-linalg-tensor-vector.md) | 560 |
+| [`25-affine-scf-arith.md`](./25-affine-scf-arith.md) | 543 |
+| [`26-openmp-openacc-llvmir.md`](./26-openmp-openacc-llvmir.md) | 549 |
+| [`27-gpu-dialects.md`](./27-gpu-dialects.md) | 497 |
+| [`28-transform-dialect-pdll.md`](./28-transform-dialect-pdll.md) | 560 |
+| [`practice-e-end-to-end-and-bug-hunt.md`](./practice-e-end-to-end-and-bug-hunt.md) | 514 |
+
+**Part 6 — 测试 / 贡献**（4 篇，2,239 行）
+
+| 文件 | 行数 |
+|---|---|
+| [`29-testing-and-update-scripts.md`](./29-testing-and-update-scripts.md) | 559 |
+| [`30-upstream-pr-review.md`](./30-upstream-pr-review.md) | 560 |
+| [`31-contribution-map.md`](./31-contribution-map.md) | 504 |
+| [`final-project-mlir-fix.md`](./final-project-mlir-fix.md) | 616 |
+
+### 校验记录（2026-11-08）
+
+```bash
+cd compilers/mlir_maintenance
+wc -l *.md | tail -1     # 20461 total（含本 README 的 262 行）
+```
+
+- 链接：README 的所有相对链接存在；每章末行「→ 下一章」目标存在；Final 收尾指回本 README。
+- 结构：每个 `.md` 的代码围栏成对；普通章 465–560 行，练习 514–599 行，Final 616 行。
+- 未实测项均在正文标注原因：Ch 23（后端二进制/ABI 只到 LLVM IR）、Ch 27（本构建 `llc` 无 NVPTX/AMDGPU 后端）、练习 E（`mlir-reduce` 未跑通，已给手工替代）。
 
 ### 环境与基线（2026-11-08）
 
