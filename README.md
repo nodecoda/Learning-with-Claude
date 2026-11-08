@@ -68,6 +68,9 @@
 - [riscv_maintenance](./compilers/riscv_maintenance/README.md)
   - LLVM 24 RISC-V 上游维护与贡献：树审计 → 扩展/Subtarget → TableGen/MC → ABI/栈帧/TLS/LLD → SelectionDAG/RVV → 机器 pass → Clang/builtins → lit/调试/贡献流程；32 章 + 5 练习 + PR-ready final（39 篇 21,284 行），以 ct-instr-trunk 的 analysis/riscv-maintenance 分支为基线，所有实验在 X86;AArch64;RISCV 构建上真跑，简体中文
 
+- [mlir_maintenance](./compilers/mlir_maintenance/README.md)
+  - LLVM 24 MLIR 上游维护与贡献：树审计/构建/lit → 核心 IR 不变量 → Pass/Pattern/Analysis → ODS/方言演化 → Conversion/Bufferization → Linalg/OpenMP/GPU → 测试/PR/贡献地图；32 章 + 5 练习 + PR-ready final（39 篇），以 ct-instr-trunk 的 analysis/mlir-maintenance 分支为基线，所有实验在 clang;lld;mlir 构建上真跑，简体中文
+
 ### dev_tools/
 
 - [git](./dev_tools/git/README.md)
