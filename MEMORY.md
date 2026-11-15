@@ -14,3 +14,4 @@
 - [Project: riscv_maintenance course scope](user_riscv_maintenance_learning.md) — LLVM 24 RISC-V 上游维护与贡献：32 章 + 5 练习 + PR-ready final；以 ct-instr-trunk 的 analysis/riscv-maintenance 分支与 X86;AArch64;RISCV 构建为基线；已完成 (2026-11-08)，39 篇 21,284 行
 - [Project: mlir_maintenance course scope](user_mlir_maintenance_learning.md) — LLVM 24 MLIR 上游维护与贡献：32 章 + 5 练习 + PR-ready final；以 ct-instr-trunk 的 analysis/mlir-maintenance 分支与 clang;lld;mlir 构建为基线；骨架完成 (2026-11-08)
 - [Project: llvm_lit course scope](user_llvm_lit_learning.md) — LLVM 24 lit 深潜：26 章 + 4 练习 + 可发布框架 final；从零基础到读改 `llvm/utils/lit` 源码并给上游提交；已完成 (2026-11-08)，32 篇 15,483 行
+- [Project: llvm_isel_sched_riscv course scope](user_llvm_isel_sched_riscv_learning.md) — LLVM 24 指令选择 × 调度（RISC-V）：30 章 + 4 练习 + 自定义指令 final；SelectionDAG 主线，GlobalISel 对照；已完成 (2026-11-16，Part 0–4 + final)
