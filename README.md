@@ -75,6 +75,8 @@
 
 - [llvm_isel_sched_riscv](./compilers/llvm_isel_sched_riscv/README.md)
   - LLVM 24 指令选择 × 调度：SelectionDAG pattern/legalize → `ScheduleDAGSDNodes` → MachineScheduler/sched model → RISC-V 选择与排序交互，30 章 + 4 练习 + 自定义指令 final；全部实验在本机 LLVM 24.0.0git 构建上真跑，简体中文；已完成 (2026-11-16)
+- [llvm_target_bringup](./compilers/llvm_target_bringup/README.md)
+  - LLVM 24 新 target 接入/bring-up：Triple/DataLayout → TargetRegistry/CMake → MC-only → TableGen/MC → TargetMachine/ABI/栈帧/Legalize/ISel → 调用/链接/调试 → 测试/Clang/上游化，29 章 + 4 练习 + MiniRV+ final；以真实 MiniRV（42 commits、53 lit、17 个 qemu e2e）与 RISC-V 参照为基线，简体中文；35 篇 19,409 行；已完成 (2026-11-16)
 
 ### dev_tools/
 
