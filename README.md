@@ -62,7 +62,8 @@
   - LLVM 24 TableGen 源码深潜：lexer/parser → Record/Init → folding/multiclass → backend 注册与生成 → 改语言特性/改记录语义 → 测试/性能/上游流程，23 章 + 4 练习 + 可提交 backend final，所有 `-gen-*` 与源码实验真实跑过，简体中文
 - [triton_source_deep_dive](./compilers/triton_source_deep_dive/README.md)
   - Triton 3.9.0 源码深潜：Python AST → TTIR/TTGIR → LLVM/PTX/SASS → launch，34 章 + 5 练习 + 全栈扩展 final（41 篇 19.4k 行）；T4 上真跑 IR/PTX 与计数，sm_80+ 标 guided；目标能修改并维护 Triton，简体中文
-
+- [nvptx_backend](./compilers/nvptx_backend/README.md)
+  - LLVM 24 NVPTX 后端深潜：PTX 契约/版本门控/kernel ABI/地址空间/IR pass/ISel/无 regalloc/栈帧/AsmPrinter/ptxas 边界/内存模型/SASS 编码，20 章 + 5 练习 + PTX→自研 ISA final；llc→ptxas→cubin→T4 全链路实测，简体中文
 - [loongarch_backend](./compilers/loongarch_backend/README.md)
   - LLVM 24 龙芯 LoongArch 全栈：树审计/ISA/Feature/ABI → TableGen/MC → SelectionDAG/LSX/LASX → 机器 pass → Clang/builtins/compiler-rt → LLD 重定位/relaxation → 上游 PR；31 章 + 5 练习 + PR-ready final（38 篇 10.1k 行），以 ct-instr-trunk 与 #239812 为基线，端到端跑通 clang→ld.lld→qemu，简体中文
 - [riscv_maintenance](./compilers/riscv_maintenance/README.md)
