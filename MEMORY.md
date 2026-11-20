@@ -17,3 +17,4 @@
 - [Project: llvm_isel_sched_riscv course scope](user_llvm_isel_sched_riscv_learning.md) — LLVM 24 指令选择 × 调度（RISC-V）：30 章 + 4 练习 + 自定义指令 final；SelectionDAG 主线，GlobalISel 对照；已完成 (2026-11-16，Part 0–4 + final)
 - [Project: llvm_target_bringup course scope](user_llvm_target_bringup_learning.md) — LLVM 24 target bring-up：Triple/Registry → MC-only → CodeGen → 链接/运行 → Clang/上游化，29 章 + 4 练习 + MiniRV+ final；以真实 MiniRV 42 commits 与 RISC-V 参照为基线；已完成 (2026-11-16)，35 篇约 19.4k 行
 - [Project: nvptx_backend course scope](user_nvptx_backend_learning.md) — LLVM NVPTX 后端深潜：PTX 契约/ABI/地址空间/ISel/无 regalloc/AsmPrinter/ptxas 边界/PTX 内存模型/SASS 编码，20 章 + 5 练习 + PTX→自研 ISA final，全链路在 ct-instr-trunk + T4 实测；已完成 (2026-11-18)
+- [Project: llvm_source_reviewer course scope](user_llvm_source_reviewer_learning.md) — LLVM 24 全树源码阅读 + 上游 review：33 章 + 5 练习 + review-ready PR final（40 篇 16,832 行）；基线 7c7a9072f736；已完成 (2026-11-20)

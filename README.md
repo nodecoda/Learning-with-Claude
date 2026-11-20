@@ -74,6 +74,9 @@
 - [llvm_lit](./compilers/llvm_lit/README.md)
   - LLVM 24 lit 深潜：从一条 RUN 行到 llvm/utils/lit 源码，覆盖发现/配置/shell/directives/替换/并行/报告/诊断，26 章 + 4 练习 + 可发布框架 final（32 篇 15,483 行）；完全零基础可读，全部关键输出本机真跑，简体中文；已完成 (2026-11-08)
 
+- [llvm_source_reviewer](./compilers/llvm_source_reviewer/README.md)
+  - LLVM 24 全树源码阅读 + 上游 review：core IR/Value-Use → ADT/TableGen/CMake → New PM/Analysis/invalidation → InstCombine/CFG/Inliner/GVN/循环 → CodeGen/MIR/RA/MC → review 制度/读 PR/正确性/测试/写作，33 章 + 5 练习 + review-ready PR final（40 篇 16,832 行）；源码基线 7c7a9072f736，全部关键输出本机真跑，简体中文；已完成 (2026-11-20)
+
 - [llvm_isel_sched_riscv](./compilers/llvm_isel_sched_riscv/README.md)
   - LLVM 24 指令选择 × 调度：SelectionDAG pattern/legalize → `ScheduleDAGSDNodes` → MachineScheduler/sched model → RISC-V 选择与排序交互，30 章 + 4 练习 + 自定义指令 final；全部实验在本机 LLVM 24.0.0git 构建上真跑，简体中文；已完成 (2026-11-16)
 - [llvm_target_bringup](./compilers/llvm_target_bringup/README.md)
